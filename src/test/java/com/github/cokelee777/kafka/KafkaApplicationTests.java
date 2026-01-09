@@ -1,11 +1,12 @@
-package me.cokelee777.kafkalargepayloadprocessor;
+package com.github.cokelee777.kafka;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
+@Import(TestcontainersConfiguration.class)
 @SpringBootTest
-class KafkaLargePayloadProcessorApplicationTests {
+class KafkaApplicationTests {
 
     @Test
     void contextLoads() {

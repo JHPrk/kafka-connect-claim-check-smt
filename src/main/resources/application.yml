@@ -1,6 +1,6 @@
 spring:
   application:
-    name: kafka-large-payload-processor
+    name: kafka
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/testdb

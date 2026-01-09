@@ -1,4 +1,4 @@
-package me.cokelee777.kafkalargepayloadprocessor;
+package com.github.cokelee777.kafka;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
