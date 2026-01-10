@@ -39,3 +39,6 @@ bin/
 .DS_Store
 
 .env
+connect-configs
+connect-plugins
+docker-compose.yml
