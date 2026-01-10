@@ -65,7 +65,7 @@ public class S3StorageStoreTest {
     S3Storage s3Storage = new S3Storage();
     s3Storage.configure(configs);
 
-    String key = "connect/smt/data.json";
+    String key = "topics/test-topic/data.json";
     String payload = "test";
     byte[] data = payload.getBytes(StandardCharsets.UTF_8);
 
@@ -73,7 +73,7 @@ public class S3StorageStoreTest {
     String resultUrl = s3Storage.store(key, data);
 
     // Then 1
-    assertEquals("s3://test-bucket/connect/smt/data.json", resultUrl);
+    assertEquals("s3://test-bucket/topics/test-topic/data.json", resultUrl);
 
     // Then 2
     String storedContent =
