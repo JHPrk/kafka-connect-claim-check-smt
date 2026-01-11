@@ -1,8 +1,7 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.S3Storage;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorage;
-
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.S3Storage;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -34,19 +33,19 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
 
   // ConfigDef (설정 정의)
   public static final ConfigDef CONFIG_DEF =
-          new ConfigDef()
-                  .define(
-                          CONFIG_STORAGE_TYPE,
-                          ConfigDef.Type.STRING,
-                          DEFAULT_STORAGE_TYPE,
-                          ConfigDef.Importance.HIGH,
-                          "Storage implementation type (e.g., S3, REDIS)")
-                  .define(
-                          CONFIG_THRESHOLD_BYTES,
-                          ConfigDef.Type.INT,
-                          DEFAULT_THRESHOLD,
-                          ConfigDef.Importance.HIGH,
-                          "Payload size threshold in bytes");
+      new ConfigDef()
+          .define(
+              CONFIG_STORAGE_TYPE,
+              ConfigDef.Type.STRING,
+              DEFAULT_STORAGE_TYPE,
+              ConfigDef.Importance.HIGH,
+              "Storage implementation type (e.g., S3, REDIS)")
+          .define(
+              CONFIG_THRESHOLD_BYTES,
+              ConfigDef.Type.INT,
+              DEFAULT_THRESHOLD,
+              ConfigDef.Importance.HIGH,
+              "Payload size threshold in bytes");
 
   private ClaimCheckStorage storage;
   private int thresholdBytes;
