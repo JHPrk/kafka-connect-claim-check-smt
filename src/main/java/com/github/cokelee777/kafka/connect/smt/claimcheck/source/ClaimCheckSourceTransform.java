@@ -1,7 +1,8 @@
-package connect.smt.claimcheck.source;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
-import connect.smt.claimcheck.storage.ClaimCheckStorage;
-import connect.smt.claimcheck.storage.S3Storage;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.S3Storage;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorage;
+
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;

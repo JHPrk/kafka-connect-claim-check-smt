@@ -1,10 +1,11 @@
-package connect.smt.claimcheck.source;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import connect.smt.claimcheck.storage.ClaimCheckStorage;
-import connect.smt.claimcheck.storage.S3Storage;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorage;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.S3Storage;
+
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;

@@ -1,4 +1,4 @@
-package connect.smt.claimcheck.storage;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.storage;
 
 import java.net.URI;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package connect.smt.claimcheck.storage;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.storage;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.times;
