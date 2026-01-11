@@ -4,10 +4,23 @@ This repository hosts an open-source toolkit for Kafka Connect Single Message Tr
 
 ## Technology Stack
 
-- **Java 11** - Core programming language
-- **Kafka Connect** - Kafka's framework for connecting Kafka with external systems
-- **AWS SDK for Java** - Amazon S3 integration for storage backend
-- **Gradle** - Build automation tool with Shadow plugin for uber JAR creation
+### Core Technologies
+- **Java 11** - Target and source compatibility
+- **Kafka Connect API 3.8.1** - Core framework for building connectors and SMTs
+- **Gradle 8.x** - Build automation with Shadow plugin for uber JAR packaging
+
+### Runtime Dependencies
+- **AWS SDK for Java 2.41.3** - Amazon S3 client for cloud storage integration
+- **Jedis 7.2.0** - Redis client for distributed caching (future features)
+- **SLF4J 2.0.17** - Logging facade (provided by Kafka Connect runtime)
+
+### Testing Framework
+- **JUnit 5.11.0** - Unit testing framework
+- **Mockito 5.21.0** - Mocking framework for unit tests
+- **Testcontainers 1.21.4** - Integration testing with LocalStack (S3) and Redis
+
+### Build Plugins
+- **Shadow JAR Plugin 8.1.1** - Creates uber JAR with relocated dependencies to avoid classpath conflicts
 
 ## Features
 
@@ -20,14 +33,53 @@ The initial SMT included in this toolkit is the **ClaimCheck SMT**. This transfo
 
 **Supported Connectors:**
 
-The ClaimCheck SMT works with any Kafka Connect **Source Connector** that produces structured data (Schema + Struct). It has been tested with:
+The ClaimCheck SMT is compatible with **Kafka Connect 2.0+** and works with any **Source Connector** that produces structured data using Kafka Connect's `Schema` and `Struct` API.
 
-*   **Debezium MySQL CDC Connector** - Change Data Capture for MySQL databases
-*   **Debezium PostgreSQL CDC Connector** - Change Data Capture for PostgreSQL databases
-*   **JDBC Source Connector** - Bulk and incremental data ingestion from relational databases
-*   Any other Source Connector that produces `org.apache.kafka.connect.data.Struct` records
+**Tested and Verified:**
 
-**Note:** The ClaimCheck SMT operates on `SourceRecord` objects before they are serialized by Converters, working directly with Kafka Connect's internal `Schema` and `Struct` data structures.
+| Connector | Tested Version | Status | Notes |
+|-----------|---------------|--------|-------|
+| **Debezium MySQL CDC** | 2.1.4 | ✅ Verified | Fully tested with complex nested structures (before/after/source envelope) |
+
+**Expected to Work (Not Yet Tested):**
+
+| Connector | Expected Compatibility | Notes |
+|-----------|----------------------|-------|
+| **Debezium PostgreSQL CDC** | 2.x | Should work with similar CDC envelope structure |
+| **Debezium SQL Server CDC** | 2.x | Should work with similar CDC envelope structure |
+| **Debezium Oracle CDC** | 2.x | Should work with similar CDC envelope structure |
+| **Confluent JDBC Source** | 10.0+ | Should work with flat Struct records |
+| **Custom Source Connectors** | Any | Must produce `org.apache.kafka.connect.data.Struct` records |
+
+> **Note:** If you test this SMT with other connectors, please consider contributing your findings via GitHub issues or pull requests!
+
+**Kafka Connect Version Compatibility:**
+
+**Tested Environment:**
+- ✅ **Confluent Platform 7.6.1** (includes Apache Kafka 3.6.x) - Verified
+- ✅ Built against **Kafka Connect API 3.8.1** for forward compatibility
+
+**Expected Compatibility:**
+- ✅ **Kafka Connect 2.0 - 3.8.x**: Should be compatible (uses stable Connect API)
+- ✅ **Kafka Connect 3.9+**: Expected to be compatible
+- ✅ **Confluent Platform 7.x**: Should be compatible with all 7.x versions
+- ⚠️ **Kafka Connect 1.x**: Not tested, may require modifications
+
+> **Note:** The SMT is built against Kafka Connect API 3.8.1 but tested on Confluent Platform 7.6.1 (Kafka 3.6.x). The backward compatibility of Connect API allows newer builds to work on older runtime versions.
+
+**Technical Requirements:**
+
+The ClaimCheck SMT operates at the **pre-serialization stage** of the Kafka Connect pipeline:
+
+```
+Source Connector → SMT (ClaimCheck) → Converter (JSON/Avro/Protobuf) → Kafka Broker
+```
+
+This means:
+- ✅ Works **independently of Converter choice** (JSON, Avro, Protobuf, etc.)
+- ✅ Processes data as Java objects (`Struct`), not serialized bytes
+- ✅ Compatible with any connector producing `Schema + Struct` records
+- ❌ Does **not** work with schema-less connectors that produce raw `Map<String, Object>` or primitive types
 
 #### Configuration
 
