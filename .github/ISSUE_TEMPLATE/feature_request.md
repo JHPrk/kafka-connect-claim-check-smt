@@ -1,4 +1,13 @@
 ---
+name: Feature request
+about: Suggest an idea for this project
+title: "[FEAT] "
+labels: enhancement
+assignees: CokeLee777
+
+---
+
+---
 
 name: ✨ Feature Request
 about: Suggest an idea or enhancement

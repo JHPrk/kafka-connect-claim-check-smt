@@ -1,4 +1,13 @@
 ---
+name: Bug report
+about: Create a report to help us improve
+title: "[BUG] "
+labels: bug
+assignees: CokeLee777
+
+---
+
+---
 
 name: 🐛 Bug Report
 about: Something is not working as expected
