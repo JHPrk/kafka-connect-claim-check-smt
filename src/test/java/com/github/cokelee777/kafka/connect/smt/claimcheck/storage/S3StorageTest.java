@@ -31,7 +31,7 @@ class S3StorageTest {
   private static final String TEST_BUCKET_NAME = "test-bucket";
   private static final String TEST_REGION_AP_NORTHEAST_1 = "ap-northeast-1";
   private static final String TEST_REGION_AP_NORTHEAST_2 = "ap-northeast-2";
-  private static final String TEST_PATH_PREFIX = "my-prefix/";
+  private static final String TEST_PATH_PREFIX = "my-prefix";
   private static final String TEST_ENDPOINT_LOCALSTACK = "http://localhost:4566";
   private static final String EXPECTED_MISSING_BUCKET_ERROR_MESSAGE =
       "Missing required configuration \"storage.s3.bucket.name\" which has no default value.";
@@ -71,7 +71,7 @@ class S3StorageTest {
         assertAll(
             () -> assertEquals(TEST_BUCKET_NAME, storage.getBucketName()),
             () -> assertEquals(TEST_REGION_AP_NORTHEAST_2, storage.getRegion()),
-            () -> assertEquals("claim-checks/", storage.getPathPrefix()),
+            () -> assertEquals("claim-checks", storage.getPathPrefix()),
             () -> assertNull(storage.getEndpointOverride()));
       }
 
@@ -192,6 +192,66 @@ class S3StorageTest {
         assertEquals(EXPECTED_EMPTY_REGION_ERROR_MESSAGE, exception.getMessage());
       }
     }
+
+    @Nested
+    @DisplayName("pathPrefix 정규화 테스트")
+    class PathPrefixNormalizationTests {
+
+      private void assertPathPrefix(String input, String expected) {
+        Map<String, String> configs = createConfigWithBucket(TEST_BUCKET_NAME);
+        configs.put(S3Storage.CONFIG_S3_PATH_PREFIX, input);
+        storage.configure(configs);
+        assertEquals(expected, storage.getPathPrefix());
+      }
+
+      @Test
+      @DisplayName("'/'로 끝나지 않는 pathPrefix는 그대로 유지된다")
+      void shouldAddTrailingSlash() {
+        assertPathPrefix("my-prefix", "my-prefix");
+      }
+
+      @Test
+      @DisplayName("'/'로 끝나는 pathPrefix는 '/'가 제거된다")
+      void shouldKeepSingleTrailingSlash() {
+        assertPathPrefix("my-prefix/", "my-prefix");
+      }
+
+      @Test
+      @DisplayName("여러 개의 '/'로 끝나는 pathPrefix는 '/'가 모두 제거된다")
+      void shouldNormalizeMultipleSlashes() {
+        assertPathPrefix("my-prefix//", "my-prefix");
+      }
+
+      @Test
+      @DisplayName("여러 개의 '/'를 가지는 pathPrefix는 마지막 '/'들만 제거된다")
+      void shouldNormalizeMultipleTrailingSlashes() {
+        assertPathPrefix("my-prefix/1/2/3//", "my-prefix/1/2/3");
+      }
+
+      @Test
+      @DisplayName("공백을 포함하는 pathPrefix는 trim된다")
+      void shouldTrimAndAddSlash() {
+        assertPathPrefix("  my-prefix  ", "my-prefix");
+      }
+
+      @Test
+      @DisplayName("빈 pathPrefix는 그대로 유지된다")
+      void shouldNormalizeEmptyPrefix() {
+        assertPathPrefix("", "");
+      }
+
+      @Test
+      @DisplayName("공백으로만 된 pathPrefix는 빈 pathPrefix로 된다")
+      void shouldNormalizeBlankPrefix() {
+        assertPathPrefix("   ", "");
+      }
+
+      @Test
+      @DisplayName("'/'만 있는 pathPrefix는 '/'가 제거된다")
+      void shouldKeepSlashOnlyPrefix() {
+        assertPathPrefix("/", "");
+      }
+    }
   }
 
   private Map<String, String> createConfigWithBucket(String bucket) {
@@ -261,7 +321,7 @@ class S3StorageTest {
         String generatedKey = capturedRequest.key();
 
         assertTrue(generatedKey.startsWith(TEST_PATH_PREFIX));
-        String uuidPart = generatedKey.substring(TEST_PATH_PREFIX.length());
+        String uuidPart = generatedKey.substring(TEST_PATH_PREFIX.length() + 1);
         assertDoesNotThrow(() -> UUID.fromString(uuidPart));
         assertEquals(TEST_BUCKET_NAME, capturedRequest.bucket());
         String expectedUri = "s3://" + TEST_BUCKET_NAME + "/" + generatedKey;

@@ -36,7 +36,7 @@ public class S3Storage implements ClaimCheckStorage {
           .define(
               CONFIG_S3_PATH_PREFIX,
               ConfigDef.Type.STRING,
-              "claim-checks/",
+              "claim-checks",
               ConfigDef.Importance.LOW,
               "Path prefix for stored objects in S3 bucket.")
           .define(
@@ -85,7 +85,7 @@ public class S3Storage implements ClaimCheckStorage {
 
     this.bucketName = ConfigUtils.getRequiredString(config, CONFIG_BUCKET_NAME);
     this.region = config.getString(CONFIG_REGION);
-    this.pathPrefix = config.getString(CONFIG_S3_PATH_PREFIX);
+    this.pathPrefix = ConfigUtils.normalizePathPrefix(config.getString(CONFIG_S3_PATH_PREFIX));
     this.endpointOverride = ConfigUtils.getOptionalString(config, CONFIG_ENDPOINT_OVERRIDE);
 
     S3ClientBuilder builder =
@@ -107,7 +107,7 @@ public class S3Storage implements ClaimCheckStorage {
       throw new IllegalStateException("S3Client is not initialized. Call configure() first.");
     }
 
-    String key = this.pathPrefix + UUID.randomUUID();
+    String key = this.pathPrefix + "/" + UUID.randomUUID();
     try {
       PutObjectRequest putObjectRequest =
           PutObjectRequest.builder().bucket(this.bucketName).key(key).build();

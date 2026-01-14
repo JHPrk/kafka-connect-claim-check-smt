@@ -26,4 +26,16 @@ public class ConfigUtils {
     }
     return null;
   }
+
+  public static String normalizePathPrefix(String prefix) {
+    if (prefix == null) {
+      return null;
+    }
+
+    String trimmedPrefix = prefix.trim();
+    while (trimmedPrefix.endsWith("/")) {
+      trimmedPrefix = trimmedPrefix.substring(0, trimmedPrefix.length() - 1);
+    }
+    return trimmedPrefix;
+  }
 }
