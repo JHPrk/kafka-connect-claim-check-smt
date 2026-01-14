@@ -81,7 +81,6 @@ public class S3Storage implements ClaimCheckStorage {
 
     if (this.endpointOverride != null) {
       builder.endpointOverride(URI.create(this.endpointOverride));
-      // http://bucketName.localhost:4566 -> http://localhost:4566/bucketName
       builder.forcePathStyle(true);
     }
 
