@@ -98,7 +98,7 @@ To use the ClaimCheck SMT, you'll need to configure it in your Kafka Connect con
     "transforms.claimcheck.storage.type": "S3",
     "transforms.claimcheck.storage.s3.bucket.name": "your-s3-bucket-name",
     "transforms.claimcheck.storage.s3.region": "your-aws-region",
-    "transforms.claimcheck.storage.s3.path.prefix": "your-s3-prefix-path"
+    "transforms.claimcheck.storage.s3.path.prefix": "your-s3/prefix/path"
     // ... other connector configurations
   }
 }
@@ -110,8 +110,8 @@ To use the ClaimCheck SMT, you'll need to configure it in your Kafka Connect con
 *   `storage.type`: The type of storage backend to use (e.g., `S3`).
 *   `storage.s3.bucket.name`: (Required for S3) The name of the S3 bucket to store the offloaded messages.
 *   `storage.s3.region`: (Optional for S3) The AWS region of the S3 bucket. Defaults to `ap-northeast-2`.
-*   `storage.s3.path.prefix`: (Optional for S3) The prefix (directory path) within the S3 bucket where offloaded messages will be stored. Defaults to `/claim-checks`. Offloaded objects are stored directly under this prefix and named with a randomly generated UUID (no original message filename or key is preserved).
-    Example object key: `/<prefix>/<uuid>` (e.g. `claim-checks/3f2a1b4e-9c7d-4a2f-8b6e-0d1c2e3f4a5b`).
+*   `storage.s3.path.prefix`: (Optional for S3) The prefix (directory path) within the S3 bucket where offloaded messages will be stored. Defaults to `claim-checks`. Offloaded objects are stored directly under this prefix and named with a randomly generated UUID (no original message filename or key is preserved).
+    Example object key: `<prefix>/<uuid>` (e.g. `claim-checks/3f2a1b4e-9c7d-4a2f-8b6e-0d1c2e3f4a5b`).
 
 #### Usage
 
