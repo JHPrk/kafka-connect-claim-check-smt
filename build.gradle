@@ -101,6 +101,13 @@ configurations {
 }
 
 shadowJar {
+    doFirst {
+        def destDir = destinationDirectory.get().asFile
+        if (destDir.exists()) {
+            delete destDir
+        }
+        destDir.mkdirs()
+    }
     archiveClassifier.set('')
     destinationDirectory = layout.buildDirectory.dir("libs/kafka-connect-smt-toolkit").get().asFile
 
