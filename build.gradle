@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.gradleup.shadow' version '9.0.0'
     id 'maven-publish'
 }
 
@@ -102,7 +102,7 @@ configurations {
 
 shadowJar {
     archiveClassifier.set('')
-    destinationDirectory = file("${buildDir}/libs/kafka-connect-smt-toolkit")
+    destinationDirectory = layout.buildDirectory.dir("libs/kafka-connect-smt-toolkit").get().asFile
 
     dependencies {
         exclude(dependency("org.apache.kafka:.*"))
@@ -126,7 +126,7 @@ publishing {
         }
     }
 
-    // 3. 배포할 저장소 위치 (GitHub Packages)
+    // 배포할 저장소 위치 (GitHub Packages)
     repositories {
         maven {
             name = "GitHubPackages"
