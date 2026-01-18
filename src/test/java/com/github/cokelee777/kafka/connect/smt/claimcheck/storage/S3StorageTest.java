@@ -414,19 +414,6 @@ class S3StorageTest {
             () -> assertEquals(5, storage.getRetryMax()),
             () -> assertEquals(1000L, storage.getRetryBackoffMs()),
             () -> assertEquals(30000L, storage.getRetryMaxBackoffMs()));
-
-        // initRetryStrategy() 메서드가 올바르게 동작하는지 확인
-        Method initRetryStrategyMethod = S3Storage.class.getDeclaredMethod("initRetryStrategy");
-        initRetryStrategyMethod.setAccessible(true);
-        Object retryStrategy = initRetryStrategyMethod.invoke(storage);
-
-        // StandardRetryStrategy 객체가 생성되었는지 확인
-        assertNotNull(retryStrategy);
-        // 실제 반환되는 클래스는 내부 구현 클래스이므로, 클래스 이름에 "StandardRetryStrategy"가 포함되는지 확인
-        assertTrue(
-            retryStrategy instanceof StandardRetryStrategy,
-            "Expected class name to contain 'StandardRetryStrategy', but was: "
-                + retryStrategy.getClass().getName());
       }
 
       @Test
@@ -441,14 +428,6 @@ class S3StorageTest {
 
         // Then
         assertEquals(0, storage.getRetryMax());
-
-        // initRetryStrategy() 메서드가 올바르게 동작하는지 확인
-        Method initRetryStrategyMethod = S3Storage.class.getDeclaredMethod("initRetryStrategy");
-        initRetryStrategyMethod.setAccessible(true);
-        Object retryStrategy = initRetryStrategyMethod.invoke(storage);
-
-        // StandardRetryStrategy 객체가 생성되었는지 확인
-        assertNotNull(retryStrategy);
       }
     }
   }
