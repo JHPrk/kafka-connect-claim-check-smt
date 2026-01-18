@@ -2,7 +2,6 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.internal;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.json.JsonConverter;

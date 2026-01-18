@@ -18,18 +18,18 @@ public class RetryConfig {
    * @param maxBackoff The maximum duration to wait between retries.
    */
   public RetryConfig(int maxAttempts, Duration initialBackoff, Duration maxBackoff) {
-    if(maxAttempts < 1) {
+    if (maxAttempts < 1) {
       throw new IllegalArgumentException("maxAttempts must be >= 1");
     }
     this.maxAttempts = maxAttempts;
 
     this.initialBackoff = Objects.requireNonNull(initialBackoff, "initialBackoff must not be null");
-    if(initialBackoff().isZero() || initialBackoff.isNegative()) {
+    if (initialBackoff().isZero() || initialBackoff.isNegative()) {
       throw new IllegalArgumentException("initialBackoff must be > 0");
     }
 
     this.maxBackoff = Objects.requireNonNull(maxBackoff, "maxBackoff must not be null");
-    if(maxBackoff.isZero() || maxBackoff.isNegative()) {
+    if (maxBackoff.isZero() || maxBackoff.isNegative()) {
       throw new IllegalArgumentException("maxBackoff must be > 0");
     }
   }
