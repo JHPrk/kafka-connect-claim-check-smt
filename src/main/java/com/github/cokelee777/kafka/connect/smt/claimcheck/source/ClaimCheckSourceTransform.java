@@ -18,10 +18,24 @@ import org.apache.kafka.connect.transforms.Transformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A Kafka Connect Single Message Transform (SMT) for implementing the Claim Check pattern.
+ *
+ * <p>This transform intercepts outgoing source records. If a record's value payload exceeds a
+ * configured size threshold, it is stored in an external storage system (e.g., S3), and the
+ * original payload is replaced with a "claim check" reference to that stored data.
+ *
+ * <p>Records with payloads smaller than the threshold are passed through unmodified. This is
+ * intended for use with source connectors.
+ */
 public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
 
   private static final Logger log = LoggerFactory.getLogger(ClaimCheckSourceTransform.class);
+  /** Specifies the type of backend storage to use. For example, "s3". */
   public static final String CONFIG_STORAGE_TYPE = "storage.type";
+  /**
+   * The size threshold in bytes. Payloads larger than this will be offloaded to external storage.
+   */
   public static final String CONFIG_THRESHOLD_BYTES = "threshold.bytes";
   private static final int DEFAULT_THRESHOLD_BYTES = 1024 * 1024;
   public static final ConfigDef CONFIG_DEF =
@@ -58,6 +72,11 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
 
   public ClaimCheckSourceTransform() {}
 
+  /**
+   * Configures this transform.
+   *
+   * @param configs The configuration settings.
+   */
   @Override
   public void configure(Map<String, ?> configs) {
     TransformConfig config = new TransformConfig(configs);
@@ -77,6 +96,16 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
         storageType);
   }
 
+  /**
+   * Applies the claim check logic to a source record.
+   *
+   * <p>If the record's value payload is larger than the configured threshold, it is uploaded to the
+   * backend storage, and the record's value is replaced with a claim check reference. Otherwise,
+   * the record is returned unchanged.
+   *
+   * @param record The source record to process.
+   * @return A new record with a claim check if the payload was oversized, or the original record.
+   */
   @Override
   public SourceRecord apply(SourceRecord record) {
     if (record.value() == null) {
@@ -111,11 +140,17 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
         record.timestamp());
   }
 
+  /**
+   * Returns the configuration definition for this transform.
+   *
+   * @return The {@link ConfigDef}.
+   */
   @Override
   public ConfigDef config() {
     return CONFIG_DEF;
   }
 
+  /** Cleans up any resources used by the transform, such as the storage client. */
   @Override
   public void close() {
     if (storage != null) {

@@ -1,8 +1,15 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.model;
 
-import java.time.Instant;
 import org.apache.kafka.connect.data.Struct;
 
+import java.time.Instant;
+
+/**
+ * Represents a "claim check" reference to a payload stored in an external system.
+ *
+ * <p>This object contains the location of the stored data (URL), its original size, and the
+ * timestamp of when it was uploaded.
+ */
 public class ClaimCheckReference {
 
   private final String referenceUrl;
@@ -15,10 +22,23 @@ public class ClaimCheckReference {
     this.uploadedAt = uploadedAt;
   }
 
+  /**
+   * Creates a new {@link ClaimCheckReference} with the current timestamp.
+   *
+   * @param referenceUrl The URL pointing to the stored payload.
+   * @param originalSizeBytes The original size of the payload in bytes.
+   * @return A new {@link ClaimCheckReference} instance.
+   */
   public static ClaimCheckReference create(String referenceUrl, long originalSizeBytes) {
     return new ClaimCheckReference(referenceUrl, originalSizeBytes, Instant.now().toEpochMilli());
   }
 
+  /**
+   * Converts this reference object into a Kafka Connect {@link Struct} using the {@link
+   * ClaimCheckSchema#SCHEMA}.
+   *
+   * @return A {@link Struct} representing the claim check.
+   */
   public Struct toStruct() {
     return new Struct(ClaimCheckSchema.SCHEMA)
         .put(ClaimCheckSchemaFields.REFERENCE_URL, referenceUrl)
