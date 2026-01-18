@@ -32,18 +32,25 @@ public class S3Storage implements ClaimCheckStorage {
 
   /** The S3 bucket name where the message payloads will be stored. */
   public static final String CONFIG_BUCKET_NAME = "storage.s3.bucket.name";
+
   /** The AWS region for the S3 bucket. */
   public static final String CONFIG_REGION = "storage.s3.region";
+
   /** A prefix to be added to the S3 object key. */
   public static final String CONFIG_PATH_PREFIX = "storage.s3.path.prefix";
+
   /** An optional endpoint override for the S3 client, primarily for testing (e.g., LocalStack). */
   public static final String CONFIG_ENDPOINT_OVERRIDE = "storage.s3.endpoint.override";
+
   /** The maximum number of retries for S3 upload operations upon failure. */
   public static final String CONFIG_RETRY_MAX = "storage.s3.retry.max";
+
   /** The initial backoff duration in milliseconds between retry attempts. */
   public static final String CONFIG_RETRY_BACKOFF_MS = "storage.s3.retry.backoff.ms";
+
   /** The maximum backoff duration in milliseconds between retry attempts. */
   public static final String CONFIG_RETRY_MAX_BACKOFF_MS = "storage.s3.retry.max.backoff.ms";
+
   public static final ConfigDef CONFIG_DEF =
       new ConfigDef()
           .define(
@@ -185,6 +192,7 @@ public class S3Storage implements ClaimCheckStorage {
 
     RetryConfig retryConfig =
         new RetryConfig(
+            // maxAttempts = initial attempt (1) + retry count
             retryMax + 1,
             Duration.ofMillis(this.retryBackoffMs),
             Duration.ofMillis(this.retryMaxBackoffMs));
@@ -210,8 +218,7 @@ public class S3Storage implements ClaimCheckStorage {
   /**
    * Uploads the given payload to the configured S3 bucket.
    *
-   * <p>A unique key is generated for the object, and it is stored under the configured path
-   * prefix.
+   * <p>A unique key is generated for the object, and it is stored under the configured path prefix.
    *
    * @param payload The byte array payload to be stored.
    * @return The S3 URI of the stored object (e.g., "s3://bucket-name/path-prefix/uuid").
