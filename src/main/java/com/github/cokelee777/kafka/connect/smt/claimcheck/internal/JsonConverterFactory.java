@@ -20,7 +20,7 @@ public class JsonConverterFactory {
    */
   public static JsonConverter createValueConverter() {
     JsonConverter converter = new JsonConverter();
-    Map<String, Object> configs = Map.of("schemas.enable", false, "converter.type", "value");
+    Map<String, Object> configs = Map.of("schemas.enable", true, "converter.type", "value");
     converter.configure(configs);
     return converter;
   }

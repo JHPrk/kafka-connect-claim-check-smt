@@ -6,6 +6,8 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link RecordValueSerializer} that serializes the record's value to a JSON byte array.
@@ -19,6 +21,8 @@ import org.apache.kafka.connect.source.SourceRecord;
  * </ul>
  */
 public class JsonRecordValueSerializer implements RecordValueSerializer {
+
+  private static final Logger log = LoggerFactory.getLogger(JsonRecordValueSerializer.class);
 
   private final JsonConverter jsonConverter;
 
@@ -41,10 +45,18 @@ public class JsonRecordValueSerializer implements RecordValueSerializer {
   @Override
   public byte[] serialize(SourceRecord record) {
     Object value = record.value();
-    Schema schema = record.valueSchema();
+    Schema valueSchema = record.valueSchema();
 
     if (value == null) {
       return null;
+    }
+
+    if (valueSchema != null) {
+      try {
+        return jsonConverter.fromConnectData(record.topic(), valueSchema, value);
+      } catch (Exception e) {
+        throw new SerializationException("Failed to serialize value with schema", e);
+      }
     }
 
     if (value instanceof byte[]) {
@@ -55,10 +67,7 @@ public class JsonRecordValueSerializer implements RecordValueSerializer {
       return ((String) value).getBytes(StandardCharsets.UTF_8);
     }
 
-    try {
-      return jsonConverter.fromConnectData(record.topic(), schema, value);
-    } catch (Exception e) {
-      throw new SerializationException("Failed to serialize value", e);
-    }
+    log.warn("Schemaless value of unsupported type: {}", value.getClass());
+    return null;
   }
 }
