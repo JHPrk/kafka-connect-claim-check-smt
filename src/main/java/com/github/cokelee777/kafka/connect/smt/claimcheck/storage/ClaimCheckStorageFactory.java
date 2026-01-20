@@ -51,11 +51,11 @@ public class ClaimCheckStorageFactory {
       throw new ConfigException("Storage type must be provided");
     }
 
-    Supplier<ClaimCheckStorage> storageSupplier = STORAGE_MAP.get(type.toLowerCase(Locale.ROOT));
-    if (storageSupplier == null) {
+    Supplier<ClaimCheckStorage> supplier = STORAGE_MAP.get(type.toLowerCase(Locale.ROOT));
+    if (supplier == null) {
       throw new ConfigException("Unsupported storage type: " + type);
     }
 
-    return storageSupplier.get();
+    return supplier.get();
   }
 }

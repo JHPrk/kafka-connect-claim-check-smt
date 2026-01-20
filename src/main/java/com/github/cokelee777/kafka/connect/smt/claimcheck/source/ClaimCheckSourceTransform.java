@@ -1,6 +1,6 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.JsonConverterFactory;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializerFactory;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializer;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckReference;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
@@ -92,7 +92,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     this.storage = ClaimCheckStorageFactory.create(this.storageType);
     this.storage.configure(configs);
 
-    this.recordSerializer = JsonConverterFactory.create();
+    this.recordSerializer = RecordSerializerFactory.create();
   }
 
   /**

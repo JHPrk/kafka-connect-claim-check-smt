@@ -17,13 +17,25 @@ public class JsonRecordSerializer implements RecordSerializer {
   private final JsonConverter schemaValueConverter;
   private final JsonConverter schemalessValueConverter;
 
-  public JsonRecordSerializer(
+  private JsonRecordSerializer(
       JsonConverter schemaValueConverter, JsonConverter schemalessValueConverter) {
     this.schemaValueConverter =
         Objects.requireNonNull(schemaValueConverter, "schemaValueConverter must not be null");
     this.schemalessValueConverter =
         Objects.requireNonNull(
             schemalessValueConverter, "schemalessValueConverter must not be null");
+  }
+
+  public static JsonRecordSerializer create() {
+    // Converter for records with schema.
+    JsonConverter schemaValueConverter = new JsonConverter();
+    schemaValueConverter.configure(Map.of("schemas.enable", true), false);
+
+    // Converter for schemaless records.
+    JsonConverter schemalessValueConverter = new JsonConverter();
+    schemalessValueConverter.configure(Map.of("schemas.enable", false), false);
+
+    return new JsonRecordSerializer(schemaValueConverter, schemalessValueConverter);
   }
 
   @Override
