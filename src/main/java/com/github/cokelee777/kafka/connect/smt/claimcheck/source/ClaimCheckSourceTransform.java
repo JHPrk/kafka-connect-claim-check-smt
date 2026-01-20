@@ -180,7 +180,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
             sizeBytes,
             metadata.isSchemasEnabled(),
             metadata.getSchemaJson(),
-            metadata.getValueType())
+            metadata.getRecordValueType())
         .toStruct();
   }
 

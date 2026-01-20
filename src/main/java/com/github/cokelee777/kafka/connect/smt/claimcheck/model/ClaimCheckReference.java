@@ -17,7 +17,7 @@ public class ClaimCheckReference {
   private final long uploadedAt;
   private final boolean originalSchemasEnabled;
   private final String originalSchemaJson;
-  private final ValueType originalValueType;
+  private final RecordValueType originalRecordValueType;
 
   private ClaimCheckReference(
       String referenceUrl,
@@ -25,13 +25,13 @@ public class ClaimCheckReference {
       long uploadedAt,
       boolean originalSchemasEnabled,
       String originalSchemaJson,
-      ValueType originalValueType) {
+      RecordValueType originalRecordValueType) {
     this.referenceUrl = referenceUrl;
     this.originalSizeBytes = originalSizeBytes;
     this.uploadedAt = uploadedAt;
     this.originalSchemasEnabled = originalSchemasEnabled;
     this.originalSchemaJson = originalSchemaJson;
-    this.originalValueType = originalValueType;
+    this.originalRecordValueType = originalRecordValueType;
   }
 
   /**
@@ -42,7 +42,7 @@ public class ClaimCheckReference {
    * @param originalSchemasEnabled Whether the original record used schemas.
    * @param originalSchemaJson The serialized schema JSON, or {@code null} if schemas were not
    *     enabled.
-   * @param originalValueType The type of the original value.
+   * @param originalRecordValueType The type of the original value.
    * @return A new {@link ClaimCheckReference} instance.
    */
   public static ClaimCheckReference create(
@@ -50,21 +50,21 @@ public class ClaimCheckReference {
       long originalSizeBytes,
       boolean originalSchemasEnabled,
       String originalSchemaJson,
-      ValueType originalValueType) {
+      RecordValueType originalRecordValueType) {
     if (referenceUrl == null || referenceUrl.isBlank()) {
       throw new IllegalArgumentException("referenceUrl must be non-blank");
     }
     if (originalSizeBytes < 0) {
       throw new IllegalArgumentException("originalSizeBytes must be >= 0");
     }
-    Objects.requireNonNull(originalValueType, "originalValueType must not be null");
+    Objects.requireNonNull(originalRecordValueType, "originalValueType must not be null");
     return new ClaimCheckReference(
         referenceUrl,
         originalSizeBytes,
         Instant.now().toEpochMilli(),
         originalSchemasEnabled,
         originalSchemaJson,
-        originalValueType);
+            originalRecordValueType);
   }
 
   /**
@@ -83,7 +83,7 @@ public class ClaimCheckReference {
         .put(ClaimCheckSchemaFields.UPLOADED_AT, uploadedAt)
         .put(ClaimCheckSchemaFields.ORIGINAL_SCHEMAS_ENABLED, originalSchemasEnabled)
         .put(ClaimCheckSchemaFields.ORIGINAL_SCHEMA_JSON, originalSchemaJson)
-        .put(ClaimCheckSchemaFields.ORIGINAL_VALUE_TYPE, originalValueType.toValue());
+        .put(ClaimCheckSchemaFields.ORIGINAL_VALUE_TYPE, originalRecordValueType.type());
   }
 
   /**
@@ -91,7 +91,7 @@ public class ClaimCheckReference {
    *
    * @return The original value type.
    */
-  public ValueType getOriginalValueType() {
-    return originalValueType;
+  public RecordValueType getOriginalValueType() {
+    return originalRecordValueType;
   }
 }

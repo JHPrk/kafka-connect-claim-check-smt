@@ -12,32 +12,51 @@ import org.apache.kafka.connect.source.SourceRecord;
  * SourceRecord}, which is used to determine how to serialize and deserialize the value for claim
  * check storage and restoration.
  */
-public enum ValueType {
-  /** A structured value with a schema (typically a {@link org.apache.kafka.connect.data.Struct}). */
-  STRUCT,
+public enum RecordValueType {
+  /**
+   * A structured value with a schema (typically a {@link org.apache.kafka.connect.data.Struct}).
+   */
+  STRUCT("struct"),
 
   /** A raw byte array value. */
-  BYTES,
+  BYTES("bytes"),
 
   /** A string value. */
-  STRING,
+  STRING("string"),
 
   /** A schemaless map value (typically {@link Map}). */
-  MAP,
+  MAP("map"),
 
   /** A null value. */
-  NULL,
+  NULL("null"),
 
   /** An unknown or unsupported value type (fallback). */
-  UNKNOWN;
+  UNKNOWN("unknown");
+
+  private final String type;
+
+  RecordValueType(String type) {
+    this.type = type;
+  }
+
+  /**
+   * Returns the string identifier for the value type.
+   *
+   * <p>This is used when serializing claim check references to store the value type as a string.
+   *
+   * @return The lower-case type string (e.g., "struct", "bytes").
+   */
+  public String type() {
+    return type;
+  }
 
   /**
    * Determines the value type from a source record.
    *
    * @param record The source record to analyze.
-   * @return The corresponding {@link ValueType}.
+   * @return The corresponding {@link RecordValueType}.
    */
-  public static ValueType from(SourceRecord record) {
+  public static RecordValueType from(SourceRecord record) {
     Objects.requireNonNull(record, "record must not be null");
 
     Schema valueSchema = record.valueSchema();
@@ -64,37 +83,5 @@ public enum ValueType {
     }
 
     return UNKNOWN;
-  }
-
-  /**
-   * Converts a string representation to a {@link ValueType}.
-   *
-   * <p>This is used when deserializing claim check references that were stored with string values.
-   *
-   * @param valueTypeString The string representation of the value type.
-   * @return The corresponding {@link ValueType}, or {@link #UNKNOWN} if the string doesn't match
-   *     any known type.
-   */
-  public static ValueType fromString(String valueTypeString) {
-    if (valueTypeString == null || valueTypeString.isBlank()) {
-      return UNKNOWN;
-    }
-
-    try {
-      return ValueType.valueOf(valueTypeString.toUpperCase());
-    } catch (IllegalArgumentException e) {
-      return UNKNOWN;
-    }
-  }
-
-  /**
-   * Returns the string representation of this value type.
-   *
-   * <p>This is used when serializing claim check references to store the value type as a string.
-   *
-   * @return The uppercase string representation of this enum value.
-   */
-  public String toValue() {
-    return this.name();
   }
 }

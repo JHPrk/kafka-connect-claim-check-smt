@@ -1,7 +1,7 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.internal;
 
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.RecordMetadata;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ValueType;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.model.RecordValueType;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
 
@@ -34,8 +34,8 @@ public class RecordMetadataExtractor {
     Schema valueSchema = record.valueSchema();
     boolean schemasEnabled = valueSchema != null;
     String schemaJson = schemasEnabled ? recordSerializer.serializeSchema(valueSchema) : null;
-    ValueType valueType = ValueType.from(record);
+    RecordValueType recordValueType = RecordValueType.from(record);
 
-    return RecordMetadata.create(schemasEnabled, schemaJson, valueType);
+    return RecordMetadata.create(schemasEnabled, schemaJson, recordValueType);
   }
 }
