@@ -47,7 +47,7 @@ class S3StorageIntegrationTest {
   private static final String TEST_CONFIG_RETRY_MAX = "5";
   private static final String TEST_CONFIG_RETRY_BACKOFF_MS = "100";
   private static final String TEST_CONFIG_RETRY_MAX_BACKOFF_MS = "1000";
-  private static final String TEST_LARGE_PAYLOAD = "this is large payload !!!";
+  private static final String TEST_LARGE_PAYLOAD = "this is large payload this is large payload!!!";
   private static final int TEST_RETRY_MAX = 5;
   private static final long TEST_RETRY_BACKOFF_MS = 100L;
   private static final long TEST_RETRY_MAX_BACKOFF_MS = 1000L;

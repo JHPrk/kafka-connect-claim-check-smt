@@ -20,6 +20,9 @@ public final class ClaimCheckSchema {
           .field(ClaimCheckSchemaFields.REFERENCE_URL, Schema.STRING_SCHEMA)
           .field(ClaimCheckSchemaFields.ORIGINAL_SIZE_BYTES, Schema.INT64_SCHEMA)
           .field(ClaimCheckSchemaFields.UPLOADED_AT, Schema.INT64_SCHEMA)
+          .field(ClaimCheckSchemaFields.ORIGINAL_SCHEMAS_ENABLED, Schema.BOOLEAN_SCHEMA)
+          .field(ClaimCheckSchemaFields.ORIGINAL_SCHEMA_JSON, Schema.OPTIONAL_STRING_SCHEMA)
+          .field(ClaimCheckSchemaFields.ORIGINAL_VALUE_TYPE, Schema.STRING_SCHEMA)
           .build();
 
   private ClaimCheckSchema() {}

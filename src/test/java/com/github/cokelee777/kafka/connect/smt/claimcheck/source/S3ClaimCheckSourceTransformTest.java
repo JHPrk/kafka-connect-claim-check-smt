@@ -34,10 +34,10 @@ public class S3ClaimCheckSourceTransformTest {
 
   private static final String TEST_CONFIG_STORAGE_TYPE = "s3";
   private static final String TEST_CONFIG_UNSUPPORTED_STORAGE_TYPE = "UnsupportedStorage";
-  private static final String TEST_CONFIG_THRESHOLD_BYTES = "10";
+  private static final String TEST_CONFIG_THRESHOLD_BYTES = "100";
   private static final String TEST_CONFIG_BUCKET_NAME = "test-bucket";
   private static final String TEST_TOPIC = "test-topic";
-  private static final String TEST_LARGE_PAYLOAD = "this is large payload !!!";
+  private static final String TEST_LARGE_PAYLOAD = "this is large payload this is large payload!!!";
   private static final String TEST_SMALL_PAYLOAD = "small";
   private static final String TEST_REFERENCE_URL = "s3://test-bucket/claim-checks/some-uuid";
 

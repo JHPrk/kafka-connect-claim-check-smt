@@ -11,16 +11,16 @@ import org.apache.kafka.connect.json.JsonConverter;
  */
 public class JsonConverterFactory {
 
-  /**
-   * Creates and configures a {@link JsonConverter} for serializing record values.
-   *
-   * <p>The converter is configured with {@code schemas.enable=false} to produce schemaless JSON.
-   *
-   * @return A configured {@link JsonConverter} instance.
-   */
-  public static JsonConverter createValueConverter() {
+  public static JsonConverter createSchemaValueConverter() {
     JsonConverter converter = new JsonConverter();
     Map<String, Object> configs = Map.of("schemas.enable", true, "converter.type", "value");
+    converter.configure(configs);
+    return converter;
+  }
+
+  public static JsonConverter createSchemalessValueConverter() {
+    JsonConverter converter = new JsonConverter();
+    Map<String, Object> configs = Map.of("schemas.enable", false, "converter.type", "value");
     converter.configure(configs);
     return converter;
   }

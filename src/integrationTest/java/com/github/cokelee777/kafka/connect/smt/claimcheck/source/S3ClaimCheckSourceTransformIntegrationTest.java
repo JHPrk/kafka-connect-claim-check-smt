@@ -38,10 +38,10 @@ class S3ClaimCheckSourceTransformIntegrationTest {
       new LocalStackContainer(LOCALSTACK_IMAGE).withServices(LocalStackContainer.Service.S3);
 
   private static final String TEST_CONFIG_STORAGE_TYPE = "s3";
-  private static final String TEST_CONFIG_THRESHOLD_BYTES = "10";
+  private static final String TEST_CONFIG_THRESHOLD_BYTES = "100";
   private static final String TEST_CONFIG_BUCKET_NAME = "test-bucket";
   private static final String TEST_TOPIC = "test-topic";
-  private static final String TEST_LARGE_PAYLOAD = "this is large payload !!!";
+  private static final String TEST_LARGE_PAYLOAD = "this is large payload this is large payload!!!";
   private static final String TEST_SMALL_PAYLOAD = "small";
 
   private static S3Client s3Client;
