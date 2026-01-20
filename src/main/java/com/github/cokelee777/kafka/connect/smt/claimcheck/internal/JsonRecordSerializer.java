@@ -97,8 +97,14 @@ public class JsonRecordSerializer implements RecordSerializer {
   /**
    * Serializes a {@link Schema} to a JSON string representation.
    *
-   * <p>The serialized format is produced by {@link Schema#toString()}, which generates a
-   * JSON-compatible string representation of the schema structure.
+   * <p>This method uses {@link Schema#toString()} to serialize the schema to JSON Schema format.
+   * While values are serialized using JsonConverter, Schema objects have a built-in toString()
+   * method that produces a JSON-compatible representation of the schema structure, which is the
+   * standard way to serialize Kafka Connect schemas.
+   *
+   * <p>Note: JsonConverter.fromConnectData() requires both schema and value, so it cannot be used
+   * to serialize a schema alone. Schema.toString() is the appropriate method for schema-only
+   * serialization and produces a JSON Schema-compatible format.
    *
    * @param schema The schema to serialize. Can be {@code null}.
    * @return A JSON string representation of the schema, or {@code null} if the input schema is
@@ -112,6 +118,10 @@ public class JsonRecordSerializer implements RecordSerializer {
     }
 
     try {
+      // Schema.toString() is the standard way to serialize Kafka Connect Schema to JSON Schema
+      // format
+      // Unlike values which use JsonConverter, schemas have a built-in toString() that produces
+      // JSON-compatible output, which is the appropriate serialization method for schema-only data
       return schema.toString();
     } catch (Exception e) {
       throw new SerializationException("Failed to serialize schema", e);
