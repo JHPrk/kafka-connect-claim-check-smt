@@ -1,20 +1,17 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
 import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.JsonConverterFactory;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.JsonRecordSerializer;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordMetadataExtractor;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializer;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckReference;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.model.RecordMetadata;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.model.RecordValueType;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorage;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageFactory;
-import com.github.cokelee777.kafka.connect.smt.utils.ConfigUtils;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.StorageType;
 import java.util.Map;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.transforms.Transformation;
 import org.slf4j.Logger;
@@ -48,6 +45,8 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
           .define(
               CONFIG_STORAGE_TYPE,
               ConfigDef.Type.STRING,
+              ConfigDef.NO_DEFAULT_VALUE,
+              ConfigDef.ValidString.in(StorageType.S3.type()),
               ConfigDef.Importance.HIGH,
               "Storage implementation type")
           .define(
@@ -57,17 +56,17 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
               ConfigDef.Importance.HIGH,
               "Payload size threshold in bytes");
 
+  private String storageType;
   private int thresholdBytes;
   private ClaimCheckStorage storage;
   private RecordSerializer recordSerializer;
-  private RecordMetadataExtractor metadataExtractor;
 
   public int getThresholdBytes() {
-    return thresholdBytes;
+    return this.thresholdBytes;
   }
 
   public ClaimCheckStorage getStorage() {
-    return storage;
+    return this.storage;
   }
 
   private static class TransformConfig extends AbstractConfig {
@@ -88,21 +87,12 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     TransformConfig config = new TransformConfig(configs);
 
     this.thresholdBytes = config.getInt(CONFIG_THRESHOLD_BYTES);
-    String storageType = ConfigUtils.getRequiredString(config, CONFIG_STORAGE_TYPE);
+    this.storageType = config.getString(CONFIG_STORAGE_TYPE);
 
-    this.storage = ClaimCheckStorageFactory.create(storageType);
+    this.storage = ClaimCheckStorageFactory.create(this.storageType);
     this.storage.configure(configs);
 
-    JsonConverter schemaValueConverter = JsonConverterFactory.createSchemaValueConverter();
-    JsonConverter schemalessValueConverter = JsonConverterFactory.createSchemalessValueConverter();
-    this.recordSerializer =
-        new JsonRecordSerializer(schemaValueConverter, schemalessValueConverter);
-    this.metadataExtractor = new RecordMetadataExtractor(this.recordSerializer);
-
-    log.info(
-        "ClaimCheckTransform initialized. Threshold: {} bytes, Storage: {}",
-        this.thresholdBytes,
-        storageType);
+    this.recordSerializer = JsonConverterFactory.create();
   }
 
   /**
@@ -117,102 +107,48 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
    */
   @Override
   public SourceRecord apply(SourceRecord record) {
-    if (shouldSkip(record)) {
+    if (record.value() == null) {
       return record;
     }
 
-    byte[] serializedValue = this.recordSerializer.serializeValue(record);
+    byte[] serializedValue = this.recordSerializer.serialize(record);
     if (serializedValue == null || !exceedsThreshold(serializedValue.length)) {
       return record;
     }
 
-    return replaceWithClaimCheck(record, serializedValue);
+    return replaceWithClaimCheckRecord(record, serializedValue);
   }
 
-  /**
-   * Checks if the record should be skipped (null value or cannot be serialized).
-   *
-   * @param record The record to check.
-   * @return {@code true} if the record should be skipped, {@code false} otherwise.
-   */
-  private boolean shouldSkip(SourceRecord record) {
-    return record.value() == null;
-  }
-
-  /**
-   * Checks if the payload size exceeds the configured threshold.
-   *
-   * @param sizeBytes The size of the payload in bytes.
-   * @return {@code true} if the size exceeds the threshold, {@code false} otherwise.
-   */
   private boolean exceedsThreshold(int sizeBytes) {
     return sizeBytes > this.thresholdBytes;
   }
 
-  /**
-   * Replaces the record's value with a claim check reference.
-   *
-   * @param record The original record.
-   * @param serializedValue The serialized value payload.
-   * @return A new record with a claim check reference.
-   */
-  private SourceRecord replaceWithClaimCheck(SourceRecord record, byte[] serializedValue) {
+  private SourceRecord replaceWithClaimCheckRecord(SourceRecord record, byte[] serializedValue) {
     String referenceUrl = this.storage.store(serializedValue);
-    RecordMetadata metadata = this.metadataExtractor.extract(record);
-    Struct referenceStruct =
-        createClaimCheckReference(referenceUrl, serializedValue.length, metadata);
+    RecordValueType recordValueType = RecordValueType.from(record);
+    Struct referenceValue =
+        ClaimCheckReference.create(referenceUrl, recordValueType, serializedValue.length)
+            .toStruct();
 
-    return createClaimCheckRecord(record, referenceStruct);
+    return createClaimCheckRecord(record, referenceValue);
   }
 
-  /**
-   * Creates a claim check reference struct from the provided information.
-   *
-   * @param referenceUrl The URL of the stored payload.
-   * @param sizeBytes The size of the payload in bytes.
-   * @param metadata The record metadata.
-   * @return A struct representing the claim check reference.
-   */
-  private Struct createClaimCheckReference(
-      String referenceUrl, long sizeBytes, RecordMetadata metadata) {
-    return ClaimCheckReference.create(
-            referenceUrl,
-            sizeBytes,
-            metadata.isSchemasEnabled(),
-            metadata.getSchemaJson(),
-            metadata.getRecordValueType())
-        .toStruct();
-  }
-
-  /**
-   * Creates a new source record with a claim check reference.
-   *
-   * @param originalRecord The original record.
-   * @param referenceStruct The claim check reference struct.
-   * @return A new record with the claim check reference.
-   */
-  private SourceRecord createClaimCheckRecord(SourceRecord originalRecord, Struct referenceStruct) {
+  private SourceRecord createClaimCheckRecord(SourceRecord originalRecord, Struct referenceValue) {
     return originalRecord.newRecord(
         originalRecord.topic(),
         originalRecord.kafkaPartition(),
         originalRecord.keySchema(),
         originalRecord.key(),
         ClaimCheckSchema.SCHEMA,
-        referenceStruct,
+        referenceValue,
         originalRecord.timestamp());
   }
 
-  /**
-   * Returns the configuration definition for this transform.
-   *
-   * @return The {@link ConfigDef}.
-   */
   @Override
   public ConfigDef config() {
     return CONFIG_DEF;
   }
 
-  /** Cleans up any resources used by the transform, such as the storage client. */
   @Override
   public void close() {
     if (storage != null) {
