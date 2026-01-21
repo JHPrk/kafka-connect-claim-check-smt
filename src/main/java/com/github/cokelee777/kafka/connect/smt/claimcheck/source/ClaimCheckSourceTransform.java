@@ -75,11 +75,6 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     return this.thresholdBytes;
   }
 
-  /**
-   * Configures this transform.
-   *
-   * @param configs The configuration settings.
-   */
   @Override
   public void configure(Map<String, ?> configs) {
     TransformConfig config = new TransformConfig(configs);
@@ -93,16 +88,6 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     this.recordSerializer = RecordSerializerFactory.create();
   }
 
-  /**
-   * Applies the claim check logic to a source record.
-   *
-   * <p>If the record's value payload is larger than the configured threshold, it is uploaded to the
-   * backend storage, and the record's value is replaced with a claim check reference. Otherwise,
-   * the record is returned unchanged.
-   *
-   * @param record The source record to process.
-   * @return A new record with a claim check if the payload was oversized, or the original record.
-   */
   @Override
   public SourceRecord apply(SourceRecord record) {
     if (record.value() == null) {
