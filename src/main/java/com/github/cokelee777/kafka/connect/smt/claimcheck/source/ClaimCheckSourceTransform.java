@@ -1,7 +1,7 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.source;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializerFactory;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializer;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.internal.RecordSerializerFactory;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckReference;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.RecordValueType;
@@ -111,37 +111,36 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
       return record;
     }
 
-    byte[] serializedValue = this.recordSerializer.serialize(record);
-    if (serializedValue == null || !exceedsThreshold(serializedValue.length)) {
+    byte[] serializedRecord = serializeRecord(record);
+    if (serializedRecord == null || serializedRecord.length <= this.thresholdBytes) {
       return record;
     }
 
-    return replaceWithClaimCheckRecord(record, serializedValue);
+    return createClaimCheckRecord(record, serializedRecord);
   }
 
-  private boolean exceedsThreshold(int sizeBytes) {
-    return sizeBytes > this.thresholdBytes;
+  private byte[] serializeRecord(SourceRecord record) {
+    if (this.recordSerializer == null) {
+      throw new IllegalStateException("RecordSerializer not configured");
+    }
+    return this.recordSerializer.serialize(record);
   }
 
-  private SourceRecord replaceWithClaimCheckRecord(SourceRecord record, byte[] serializedValue) {
-    String referenceUrl = this.storage.store(serializedValue);
+  private SourceRecord createClaimCheckRecord(SourceRecord record, byte[] serializedRecord) {
+    String referenceUrl = this.storage.store(serializedRecord);
     RecordValueType recordValueType = RecordValueType.from(record);
     Struct referenceValue =
-        ClaimCheckReference.create(referenceUrl, recordValueType, serializedValue.length)
+        ClaimCheckReference.create(referenceUrl, recordValueType, serializedRecord.length)
             .toStruct();
 
-    return createClaimCheckRecord(record, referenceValue);
-  }
-
-  private SourceRecord createClaimCheckRecord(SourceRecord originalRecord, Struct referenceValue) {
-    return originalRecord.newRecord(
-        originalRecord.topic(),
-        originalRecord.kafkaPartition(),
-        originalRecord.keySchema(),
-        originalRecord.key(),
+    return record.newRecord(
+        record.topic(),
+        record.kafkaPartition(),
+        record.keySchema(),
+        record.key(),
         ClaimCheckSchema.SCHEMA,
         referenceValue,
-        originalRecord.timestamp());
+        record.timestamp());
   }
 
   @Override
