@@ -10,8 +10,8 @@ public class RetryConfig {
   private final Duration maxBackoff;
 
   public RetryConfig(int maxAttempts, Duration initialBackoff, Duration maxBackoff) {
-    if (maxAttempts < 1) {
-      throw new IllegalArgumentException("maxAttempts must be >= 1");
+    if (maxAttempts < 0) {
+      throw new IllegalArgumentException("maxAttempts must be >= 0");
     }
     this.maxAttempts = maxAttempts;
 
