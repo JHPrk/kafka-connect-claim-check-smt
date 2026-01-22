@@ -2,6 +2,7 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3;
 
 import static org.assertj.core.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 @DisplayName("S3ClientFactory 단위 테스트")
 class S3ClientFactoryTest {
 
+  private S3ClientFactory s3ClientFactory;
+
+  @BeforeEach
+  void beforeEach() {
+    s3ClientFactory = new S3ClientFactory();
+  }
+
   @Nested
   @DisplayName("create 메서드 테스트")
   class CreateTest {
@@ -23,7 +31,6 @@ class S3ClientFactoryTest {
     public void rightConfig() {
       // Given
       S3ClientConfig config = new S3ClientConfig("ap-northeast-2", null, 3, 300L, 20000L);
-      S3ClientFactory s3ClientFactory = new S3ClientFactory();
 
       // When
       S3Client s3Client = s3ClientFactory.create(config);
@@ -38,8 +45,6 @@ class S3ClientFactoryTest {
       // Given
       S3ClientConfig config =
           new S3ClientConfig("ap-northeast-2", "http://localhost:4566", 3, 300L, 20000L);
-
-      S3ClientFactory s3ClientFactory = new S3ClientFactory();
 
       // When
       S3Client s3Client = s3ClientFactory.create(config);
@@ -58,7 +63,6 @@ class S3ClientFactoryTest {
     public void normalConfig() {
       // Given
       S3ClientConfig config = new S3ClientConfig("ap-northeast-2", null, 3, 300L, 20000L);
-      S3ClientFactory s3ClientFactory = new S3ClientFactory();
 
       // When
       ClientOverrideConfiguration clientOverrideConfiguration =
