@@ -4,9 +4,10 @@ import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.retry.RetryCon
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.retry.RetryStrategyFactory;
 import java.net.URI;
 import java.time.Duration;
-import org.apache.kafka.connect.transforms.util.SimpleConfig;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.StandardRetryStrategy;
@@ -15,42 +16,61 @@ import software.amazon.awssdk.services.s3.S3ClientBuilder;
 
 public class S3ClientFactory {
 
-  private final SimpleConfig config;
-  private final RetryStrategyFactory<StandardRetryStrategy> retryStrategyFactory;
+  private static final int INITIAL_ATTEMPT = 1;
 
-  public S3ClientFactory(SimpleConfig config) {
-    this.config = config;
-    this.retryStrategyFactory = new S3RetryStrategyFactory();
+  private final RetryStrategyFactory<StandardRetryStrategy> retryStrategyFactory;
+  private final SdkHttpClient httpClient;
+  private final AwsCredentialsProvider credentialsProvider;
+
+  public S3ClientFactory() {
+    this(
+        new S3RetryStrategyFactory(),
+        UrlConnectionHttpClient.builder().build(),
+        DefaultCredentialsProvider.builder().build());
   }
 
-  public S3Client create() {
-    S3ClientBuilder builder =
-        S3Client.builder()
-            .httpClient(UrlConnectionHttpClient.builder().build())
-            .credentialsProvider(DefaultCredentialsProvider.builder().build())
-            .overrideConfiguration(createOverrideConfiguration());
+  public S3ClientFactory(
+      RetryStrategyFactory<StandardRetryStrategy> retryStrategyFactory,
+      SdkHttpClient httpClient,
+      AwsCredentialsProvider credentialsProvider) {
+    this.retryStrategyFactory = retryStrategyFactory;
+    this.httpClient = httpClient;
+    this.credentialsProvider = credentialsProvider;
+  }
 
-    String region = config.getString(S3Storage.Config.REGION);
-    builder.region(Region.of(region));
+  public S3Client create(S3ClientConfig config) {
+    S3ClientBuilder builder = createBuilder(config);
+    configureRegion(builder, config);
+    configureEndpoint(builder, config);
+    return builder.build();
+  }
 
-    String endpointOverride = config.getString(S3Storage.Config.ENDPOINT_OVERRIDE);
+  private S3ClientBuilder createBuilder(S3ClientConfig config) {
+    return S3Client.builder()
+        .httpClient(httpClient)
+        .credentialsProvider(credentialsProvider)
+        .overrideConfiguration(createOverrideConfiguration(config));
+  }
+
+  private void configureRegion(S3ClientBuilder builder, S3ClientConfig config) {
+    builder.region(Region.of(config.getRegion()));
+  }
+
+  private void configureEndpoint(S3ClientBuilder builder, S3ClientConfig config) {
+    String endpointOverride = config.getEndpointOverride();
     if (endpointOverride != null) {
       builder.endpointOverride(URI.create(endpointOverride));
       builder.forcePathStyle(true);
     }
-
-    return builder.build();
   }
 
-  public ClientOverrideConfiguration createOverrideConfiguration() {
-    int retryMax = config.getInt(S3Storage.Config.RETRY_MAX);
-    long retryBackoffMs = config.getLong(S3Storage.Config.RETRY_BACKOFF_MS);
-    long retryMaxBackoffMs = config.getLong(S3Storage.Config.RETRY_MAX_BACKOFF_MS);
-
+  public ClientOverrideConfiguration createOverrideConfiguration(S3ClientConfig config) {
+    int maxAttempts = config.getRetryMax() + INITIAL_ATTEMPT;
     RetryConfig retryConfig =
         new RetryConfig(
-            // maxAttempts = initial attempt (1) + retry count
-            retryMax + 1, Duration.ofMillis(retryBackoffMs), Duration.ofMillis(retryMaxBackoffMs));
+            maxAttempts,
+            Duration.ofMillis(config.getRetryBackoffMs()),
+            Duration.ofMillis(config.getRetryMaxBackoffMs()));
     StandardRetryStrategy retryStrategy = retryStrategyFactory.create(retryConfig);
 
     return ClientOverrideConfiguration.builder().retryStrategy(retryStrategy).build();

@@ -2,8 +2,7 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.storage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.S3ClientFactory;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.S3Storage;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -113,26 +112,24 @@ class S3StorageIntegrationTest {
     final int failureCount = 2;
     final FailingHttpClient failingHttpClient = new FailingHttpClient(failureCount);
 
+    configs.put(
+        S3Storage.Config.ENDPOINT_OVERRIDE,
+        localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString());
     configs.put(S3Storage.Config.RETRY_MAX, String.valueOf(failureCount));
     configs.put(S3Storage.Config.RETRY_BACKOFF_MS, "10");
 
     SimpleConfig simpleConfig = new SimpleConfig(S3Storage.Config.DEFINITION, configs);
-    S3ClientFactory factory = new S3ClientFactory(simpleConfig);
+    S3ClientConfig s3ClientConfig = S3ClientConfigFactory.create(simpleConfig);
+    S3ClientFactory s3ClientFactory =
+        new S3ClientFactory(
+            new S3RetryStrategyFactory(),
+            failingHttpClient,
+            StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(localstack.getAccessKey(), localstack.getSecretKey())));
 
-    try (S3Client failingS3Client =
-        S3Client.builder()
-            .httpClient(failingHttpClient)
-            .endpointOverride(localstack.getEndpointOverride(LocalStackContainer.Service.S3))
-            .credentialsProvider(
-                StaticCredentialsProvider.create(
-                    AwsBasicCredentials.create(
-                        localstack.getAccessKey(), localstack.getSecretKey())))
-            .region(Region.of(localstack.getRegion()))
-            .overrideConfiguration(factory.createOverrideConfiguration())
-            .forcePathStyle(true)
-            .build()) {
+    try (S3Client s3Client = s3ClientFactory.create(s3ClientConfig)) {
 
-      storage = new S3Storage(failingS3Client);
+      storage = new S3Storage(s3Client);
       storage.configure(configs);
       byte[] data = TEST_LARGE_PAYLOAD.getBytes(StandardCharsets.UTF_8);
 

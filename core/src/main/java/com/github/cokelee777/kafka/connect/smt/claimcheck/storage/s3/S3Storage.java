@@ -116,8 +116,10 @@ public class S3Storage implements ClaimCheckStorage {
     this.pathPrefix = ConfigUtils.normalizePathPrefix(config.getString(Config.PATH_PREFIX));
 
     if (this.s3Client == null) {
-      S3ClientFactory factory = new S3ClientFactory(config);
-      this.s3Client = factory.create();
+      S3ClientConfig s3ClientConfig = S3ClientConfigFactory.create(config);
+
+      S3ClientFactory s3ClientFactory = new S3ClientFactory();
+      this.s3Client = s3ClientFactory.create(s3ClientConfig);
     }
   }
 
