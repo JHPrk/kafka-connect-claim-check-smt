@@ -17,11 +17,11 @@ class S3ClientFactoryTest {
 
   @Nested
   @DisplayName("create 메서드 테스트")
-  class Create {
+  class CreateTest {
 
     @Test
     @DisplayName("올바른 설정정보를 세팅하면 정상적으로 S3Client가 생성된다.")
-    public void normalConfig() {
+    public void rightConfig() {
       // Given
       S3ClientConfig config = new S3ClientConfig("ap-northeast-2", null, 3, 300L, 20000L);
       S3ClientFactory s3ClientFactory = new S3ClientFactory();

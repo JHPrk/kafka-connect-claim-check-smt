@@ -21,11 +21,11 @@ class S3RetryStrategyFactoryTest {
 
   @Nested
   @DisplayName("create 메서드 테스트")
-  class Create {
+  class CreateTest {
 
     @Test
     @DisplayName("올바른 설정정보를 세팅하면 정상적으로 S3RetryStrategy가 생성된다.")
-    public void normalConfig() {
+    public void rightConfig() {
       // Given
       when(config.maxAttempts()).thenReturn(4);
       when(config.initialBackoff()).thenReturn(Duration.ofMillis(300L));
