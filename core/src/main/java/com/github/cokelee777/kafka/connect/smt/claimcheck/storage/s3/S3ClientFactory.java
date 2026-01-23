@@ -64,7 +64,7 @@ public class S3ClientFactory {
     }
   }
 
-  public ClientOverrideConfiguration createOverrideConfiguration(S3ClientConfig config) {
+  ClientOverrideConfiguration createOverrideConfiguration(S3ClientConfig config) {
     int maxAttempts = config.getRetryMax() + INITIAL_ATTEMPT;
     RetryConfig retryConfig =
         new RetryConfig(

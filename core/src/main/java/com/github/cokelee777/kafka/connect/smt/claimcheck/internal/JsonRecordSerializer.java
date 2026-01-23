@@ -26,11 +26,11 @@ public class JsonRecordSerializer implements RecordSerializer {
             schemalessValueConverter, "schemalessValueConverter must not be null");
   }
 
-  public JsonConverter getSchemaValueConverter() {
+  JsonConverter getSchemaValueConverter() {
     return schemaValueConverter;
   }
 
-  public JsonConverter getSchemalessValueConverter() {
+  JsonConverter getSchemalessValueConverter() {
     return schemalessValueConverter;
   }
 

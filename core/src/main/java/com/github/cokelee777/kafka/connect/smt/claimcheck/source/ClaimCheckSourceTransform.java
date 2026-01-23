@@ -57,15 +57,15 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
 
   public ClaimCheckSourceTransform() {}
 
-  public ClaimCheckSourceTransform(ClaimCheckStorage storage) {
+  ClaimCheckSourceTransform(ClaimCheckStorage storage) {
     this.storage = storage;
   }
 
-  public ClaimCheckSourceTransform(RecordSerializer recordSerializer) {
+  ClaimCheckSourceTransform(RecordSerializer recordSerializer) {
     this.recordSerializer = recordSerializer;
   }
 
-  public ClaimCheckSourceTransform(ClaimCheckStorage storage, RecordSerializer recordSerializer) {
+  ClaimCheckSourceTransform(ClaimCheckStorage storage, RecordSerializer recordSerializer) {
     this.storage = storage;
     this.recordSerializer = recordSerializer;
   }
