@@ -38,7 +38,7 @@ class S3RetryStrategyFactoryTest {
 
       // Then
       assertThat(strategy).isNotNull();
-      assertThat(strategy.maxAttempts()).isSameAs(4);
+      assertThat(strategy.maxAttempts()).isEqualTo(4);
     }
   }
 }
