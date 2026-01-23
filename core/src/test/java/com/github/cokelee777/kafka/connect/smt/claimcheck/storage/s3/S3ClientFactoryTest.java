@@ -24,10 +24,10 @@ class S3ClientFactoryTest {
       S3ClientConfig config = new S3ClientConfig("ap-northeast-2", null, 3, 300L, 20000L);
 
       // When
-      S3Client s3Client = s3ClientFactory.create(config);
-
-      // Then
-      assertThat(s3Client).isNotNull();
+      try (S3Client s3Client = s3ClientFactory.create(config)) {
+        // Then
+        assertThat(s3Client).isNotNull();
+      }
     }
 
     @Test
@@ -38,10 +38,10 @@ class S3ClientFactoryTest {
           new S3ClientConfig("ap-northeast-2", "http://localhost:4566", 3, 300L, 20000L);
 
       // When
-      S3Client s3Client = s3ClientFactory.create(config);
-
-      // Then
-      assertThat(s3Client).isNotNull();
+      try (S3Client s3Client = s3ClientFactory.create(config)) {
+        // Then
+        assertThat(s3Client).isNotNull();
+      }
     }
   }
 
