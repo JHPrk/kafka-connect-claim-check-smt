@@ -8,13 +8,18 @@ import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStor
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageFactory;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.StorageType;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.transforms.Transformation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
+
+  private static final Logger log = LoggerFactory.getLogger(ClaimCheckSourceTransform.class);
 
   public static final class Config {
 
@@ -22,7 +27,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     public static final String THRESHOLD_BYTES = "threshold.bytes";
 
     /** Default threshold: 1MB (1024 * 1024 bytes) */
-    private static final int DEFAULT_THRESHOLD_BYTES = 1024 * 1024;
+    private static final long DEFAULT_THRESHOLD_BYTES = 1024L * 1024L;
 
     public static final ConfigDef DEFINITION =
         new ConfigDef()
@@ -35,7 +40,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
                 "Storage implementation type")
             .define(
                 THRESHOLD_BYTES,
-                ConfigDef.Type.INT,
+                ConfigDef.Type.LONG,
                 DEFAULT_THRESHOLD_BYTES,
                 ConfigDef.Range.atLeast(1L),
                 ConfigDef.Importance.HIGH,
@@ -51,7 +56,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
   }
 
   private String storageType;
-  private int thresholdBytes;
+  private long thresholdBytes;
   private ClaimCheckStorage storage;
   private RecordSerializer recordSerializer;
 
@@ -82,7 +87,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     return recordSerializer;
   }
 
-  public int getThresholdBytes() {
+  public long getThresholdBytes() {
     return this.thresholdBytes;
   }
 
@@ -90,17 +95,19 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
   public void configure(Map<String, ?> configs) {
     TransformConfig config = new TransformConfig(configs);
 
-    this.thresholdBytes = config.getInt(Config.THRESHOLD_BYTES);
+    this.thresholdBytes = config.getLong(Config.THRESHOLD_BYTES);
     this.storageType = config.getString(Config.STORAGE_TYPE);
 
     if (this.storage == null) {
       this.storage = ClaimCheckStorageFactory.create(this.storageType);
-      this.storage.configure(configs);
     }
+    Objects.requireNonNull(this.storage, "ClaimCheckStorage not configured");
+    this.storage.configure(configs);
 
     if (this.recordSerializer == null) {
       this.recordSerializer = RecordSerializerFactory.create();
     }
+    Objects.requireNonNull(this.recordSerializer, "RecordSerializer not configured");
   }
 
   @Override
@@ -109,19 +116,12 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
       return record;
     }
 
-    byte[] serializedRecord = serializeRecord(record);
+    byte[] serializedRecord = this.recordSerializer.serialize(record);
     if (serializedRecord == null || serializedRecord.length <= this.thresholdBytes) {
       return record;
     }
 
     return createClaimCheckRecord(record, serializedRecord);
-  }
-
-  private byte[] serializeRecord(SourceRecord record) {
-    if (this.recordSerializer == null) {
-      throw new IllegalStateException("RecordSerializer not configured");
-    }
-    return this.recordSerializer.serialize(record);
   }
 
   private SourceRecord createClaimCheckRecord(SourceRecord record, byte[] serializedRecord) {
@@ -146,8 +146,8 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
 
   @Override
   public void close() {
-    if (storage != null) {
-      storage.close();
+    if (this.storage != null) {
+      this.storage.close();
     }
   }
 }
