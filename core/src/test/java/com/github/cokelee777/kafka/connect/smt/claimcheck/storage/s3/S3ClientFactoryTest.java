@@ -2,25 +2,16 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@ExtendWith(MockitoExtension.class)
 @DisplayName("S3ClientFactory 단위 테스트")
 class S3ClientFactoryTest {
 
-  private S3ClientFactory s3ClientFactory;
-
-  @BeforeEach
-  void beforeEach() {
-    s3ClientFactory = new S3ClientFactory();
-  }
+  private final S3ClientFactory s3ClientFactory = new S3ClientFactory();
 
   @Nested
   @DisplayName("create 메서드 테스트")

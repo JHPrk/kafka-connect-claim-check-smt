@@ -7,7 +7,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,12 +35,7 @@ class JsonRecordSerializerTest {
   @DisplayName("serialize 메서드 테스트")
   class SerializeTest {
 
-    private JsonRecordSerializer jsonRecordSerializer;
-
-    @BeforeEach
-    void beforeEach() {
-      jsonRecordSerializer = JsonRecordSerializer.create();
-    }
+    private final JsonRecordSerializer jsonRecordSerializer = JsonRecordSerializer.create();
 
     @Test
     @DisplayName("Schema가 존재하는 Record는 정상적으로 직렬화된다.")

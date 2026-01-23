@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.retries.StandardRetryStrategy;
@@ -17,6 +18,7 @@ import software.amazon.awssdk.retries.StandardRetryStrategy;
 @DisplayName("S3RetryStrategyFactory 단위 테스트")
 class S3RetryStrategyFactoryTest {
 
+  @InjectMocks private S3RetryStrategyFactory factory;
   @Mock private RetryConfig config;
 
   @Nested
@@ -30,7 +32,6 @@ class S3RetryStrategyFactoryTest {
       when(config.maxAttempts()).thenReturn(4);
       when(config.initialBackoff()).thenReturn(Duration.ofMillis(300L));
       when(config.maxBackoff()).thenReturn(Duration.ofMillis(20000L));
-      S3RetryStrategyFactory factory = new S3RetryStrategyFactory();
 
       // When
       StandardRetryStrategy strategy = factory.create(config);

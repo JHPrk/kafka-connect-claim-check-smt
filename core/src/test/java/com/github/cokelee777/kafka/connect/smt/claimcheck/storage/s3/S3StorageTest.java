@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -23,17 +24,12 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @DisplayName("S3Storage 단위 테스트")
 class S3StorageTest {
 
-  private S3Storage s3Storage;
+  @InjectMocks private S3Storage s3Storage;
   @Mock private S3Client s3Client;
 
   @Nested
   @DisplayName("configure 메서드 테스트")
   class ConfigureTest {
-
-    @BeforeEach
-    void setUp() {
-      s3Storage = new S3Storage();
-    }
 
     @Test
     @DisplayName("올바른 설정정보를 세팅하면 정상적으로 구성된다.")
@@ -106,8 +102,7 @@ class S3StorageTest {
   class StoreTest {
 
     @BeforeEach
-    void setUp() {
-      s3Storage = new S3Storage(s3Client);
+    void beforeEach() {
       Map<String, String> configs = Map.of(S3Storage.Config.BUCKET_NAME, "test-bucket");
       s3Storage.configure(configs);
     }
@@ -149,10 +144,7 @@ class S3StorageTest {
     @Test
     @DisplayName("S3Client가 주입된 상태에서 close 호출 시 client의 close가 호출된다.")
     void shouldCloseInjectedClient() {
-      // Given
-      s3Storage = new S3Storage(s3Client);
-
-      // When
+      // Given & When
       s3Storage.close();
 
       // Then
