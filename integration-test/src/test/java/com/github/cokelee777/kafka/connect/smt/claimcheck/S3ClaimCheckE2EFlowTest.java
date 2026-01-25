@@ -15,7 +15,6 @@ import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.header.Header;
-import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.*;
@@ -64,13 +63,6 @@ class S3ClaimCheckE2EFlowTest {
   @AfterAll
   static void afterAll() {
     s3Client.close();
-  }
-
-  @BeforeEach
-  void beforeEach() {
-    schemaValueJsonConverter = new JsonConverter();
-    Map<String, Boolean> configs = Map.of("schema.enabled", true);
-    schemaValueJsonConverter.configure(configs, false);
   }
 
   @AfterEach
