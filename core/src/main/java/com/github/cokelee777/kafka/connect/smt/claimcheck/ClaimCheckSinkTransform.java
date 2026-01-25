@@ -117,7 +117,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
   private SinkRecord createOriginalRecord(SinkRecord record, Header claimCheckHeader) {
     ClaimCheckValue claimCheckValue = extractReference(claimCheckHeader);
     String referenceUrl = claimCheckValue.getReferenceUrl();
-    Long originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
+    long originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
 
     log.debug(
         "Recovering claim check record from: {}, original size: {} bytes",
@@ -125,7 +125,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
         originalSizeBytes);
 
     byte[] serializedRecord = this.storage.retrieve(referenceUrl);
-    if (serializedRecord == null) {
+    if (serializedRecord == null || serializedRecord.length == 0) {
       throw new ConnectException("Failed to retrieve data from: " + referenceUrl);
     }
 
