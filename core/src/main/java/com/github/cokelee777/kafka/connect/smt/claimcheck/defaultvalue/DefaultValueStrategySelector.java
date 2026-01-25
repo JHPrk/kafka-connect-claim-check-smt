@@ -2,7 +2,7 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.defaultvalue;
 
 import com.github.cokelee777.kafka.connect.smt.claimcheck.defaultvalue.strategies.schemaless.SchemalessStrategy;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.defaultvalue.strategies.struct.DebeziumStructStrategy;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.defaultvalue.strategies.struct.FlatStructStrategy;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.defaultvalue.strategies.struct.GenericStructStrategy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +33,7 @@ public class DefaultValueStrategySelector {
   private static List<DefaultValueStrategy> createDefaultStrategies() {
     List<DefaultValueStrategy> strategies = new ArrayList<>();
     strategies.add(new DebeziumStructStrategy());
-    strategies.add(new FlatStructStrategy());
+    strategies.add(new GenericStructStrategy());
     strategies.add(new SchemalessStrategy());
 
     return strategies;

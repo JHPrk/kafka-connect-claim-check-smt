@@ -11,13 +11,13 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FlatStructStrategy implements DefaultValueStrategy {
+public class GenericStructStrategy implements DefaultValueStrategy {
 
-  private static final Logger log = LoggerFactory.getLogger(FlatStructStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(GenericStructStrategy.class);
 
   @Override
   public String getStrategyType() {
-    return DefaultValueStrategyType.FLAT_STRUCT.type();
+    return DefaultValueStrategyType.GENERIC_STRUCT.type();
   }
 
   @Override
