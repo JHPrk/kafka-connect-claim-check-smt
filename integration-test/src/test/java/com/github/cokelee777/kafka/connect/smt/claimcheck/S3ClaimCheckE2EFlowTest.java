@@ -160,25 +160,19 @@ class S3ClaimCheckE2EFlowTest {
   }
 
   @Nested
-  @DisplayName("S3 재시도 통합 테스트")
-  class S3RetryIntegrationTest {
+  @DisplayName("S3 SourceTransform 재시도 통합 테스트")
+  class S3SourceRetryIntegrationTest {
 
     @AfterEach
     void cleanupToxics() throws IOException {
       clearAllToxics();
     }
 
-    private void clearAllToxics() throws IOException {
-      for (var toxic : s3Proxy.toxics().getAll()) {
-        toxic.remove();
-      }
-    }
-
     @Test
     @DisplayName("일시적인 네트워크 오류 발생 시 재시도하여 성공해야 한다")
     void shouldRetryAndSucceedOnTransientFailure() throws Exception {
       // Given
-      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(3);
+      Map<String, Object> sourceTransformConfig = generateSourceConfigWithToxiproxy(3);
       sourceTransform.configure(sourceTransformConfig);
 
       SourceRecord initialSourceRecord = generateSourceRecord();
@@ -197,7 +191,7 @@ class S3ClaimCheckE2EFlowTest {
     @DisplayName("최대 재시도 횟수를 초과하면 예외가 발생해야 한다")
     void shouldFailWhenMaxRetriesExceeded() throws Exception {
       // Given
-      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(2);
+      Map<String, Object> sourceTransformConfig = generateSourceConfigWithToxiproxy(2);
       sourceTransform.configure(sourceTransformConfig);
 
       SourceRecord initialSourceRecord = generateSourceRecord();
@@ -215,7 +209,7 @@ class S3ClaimCheckE2EFlowTest {
     @DisplayName("재시도 설정이 0일 때 즉시 실패해야 한다")
     void shouldFailImmediatelyWhenRetryDisabled() throws Exception {
       // Given
-      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(0);
+      Map<String, Object> sourceTransformConfig = generateSourceConfigWithToxiproxy(0);
       sourceTransform.configure(sourceTransformConfig);
 
       SourceRecord initialSourceRecord = generateSourceRecord();
@@ -228,29 +222,130 @@ class S3ClaimCheckE2EFlowTest {
       assertThatThrownBy(() -> sourceTransform.apply(initialSourceRecord))
           .isInstanceOf(RuntimeException.class);
     }
+  }
 
-    private Map<String, Object> generateConfigWithToxiproxy(int retryMax) {
-      return generateConfigWithToxiproxy(retryMax, 50L, 100L);
+  @Nested
+  @DisplayName("S3 SinkTransform 재시도 통합 테스트")
+  class S3SinkRetryIntegrationTest {
+
+    @AfterEach
+    void cleanupToxics() throws IOException {
+      clearAllToxics();
     }
 
-    private Map<String, Object> generateConfigWithToxiproxy(
-        int retryMax, long retryBackoffMs, long retryMaxBackoffMs) {
-      Map<String, Object> sourceTransformConfig = new HashMap<>();
-      sourceTransformConfig.put(
+    @Test
+    @DisplayName("일시적인 네트워크 오류 발생 시 재시도하여 성공해야 한다")
+    void shouldRetryAndSucceedOnTransientFailure() throws Exception {
+      // Given
+      Map<String, Object> sinkTransformConfig = generateSinkConfigWithToxiproxy(3);
+      sinkTransform.configure(sinkTransformConfig);
+
+      SinkRecord initialSinkRecord = storeDataAndCreateSinkRecord();
+
+      // 프록시 네트워크 연결 지연
+      s3Proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, 50);
+
+      // When
+      SinkRecord restoredSinkRecord = sinkTransform.apply(initialSinkRecord);
+
+      // Then
+      SourceRecord initialSourceRecord = generateSourceRecord();
+      validateRestoredSinkRecord(restoredSinkRecord, initialSourceRecord);
+    }
+
+    @Test
+    @DisplayName("최대 재시도 횟수를 초과하면 예외가 발생해야 한다")
+    void shouldFailWhenMaxRetriesExceeded() throws Exception {
+      // Given: S3에 데이터 저장 후 SinkRecord 생성
+      SinkRecord initialSinkRecord = storeDataAndCreateSinkRecord();
+
+      // SinkTransform을 Toxiproxy를 통해 설정
+      Map<String, Object> sinkTransformConfig = generateSinkConfigWithToxiproxy(2);
+      sinkTransform.configure(sinkTransformConfig);
+
+      // 프록시 네트워크 연결 완전 차단
+      s3Proxy.toxics().bandwidth("bandwidth-down", ToxicDirection.DOWNSTREAM, 0);
+      s3Proxy.toxics().bandwidth("bandwidth-up", ToxicDirection.UPSTREAM, 0);
+
+      // When & Then
+      assertThatThrownBy(() -> sinkTransform.apply(initialSinkRecord))
+          .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("재시도 설정이 0일 때 즉시 실패해야 한다")
+    void shouldFailImmediatelyWhenRetryDisabled() throws Exception {
+      // Given: S3에 데이터 저장 후 SinkRecord 생성
+      SinkRecord initialSinkRecord = storeDataAndCreateSinkRecord();
+
+      // SinkTransform을 Toxiproxy를 통해 설정
+      Map<String, Object> sinkTransformConfig = generateSinkConfigWithToxiproxy(0);
+      sinkTransform.configure(sinkTransformConfig);
+
+      // 프록시 네트워크 연결 완전 차단
+      s3Proxy.toxics().bandwidth("bandwidth-down", ToxicDirection.DOWNSTREAM, 0);
+      s3Proxy.toxics().bandwidth("bandwidth-up", ToxicDirection.UPSTREAM, 0);
+
+      // When & Then
+      assertThatThrownBy(() -> sinkTransform.apply(initialSinkRecord))
+          .isInstanceOf(RuntimeException.class);
+    }
+
+    private SinkRecord storeDataAndCreateSinkRecord() {
+      Map<String, Object> sourceConfig = new HashMap<>();
+      sourceConfig.put(
           ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
-      sourceTransformConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
-      sourceTransformConfig.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
-      sourceTransformConfig.put(S3Storage.Config.REGION, localstack.getRegion());
-      sourceTransformConfig.put(S3Storage.Config.ENDPOINT_OVERRIDE, getProxiedEndpoint());
-      sourceTransformConfig.put(S3Storage.Config.RETRY_MAX, retryMax);
-      sourceTransformConfig.put(S3Storage.Config.RETRY_BACKOFF_MS, retryBackoffMs);
-      sourceTransformConfig.put(S3Storage.Config.RETRY_MAX_BACKOFF_MS, retryMaxBackoffMs);
-      return sourceTransformConfig;
-    }
+      sourceConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
+      sourceConfig.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
+      sourceConfig.put(S3Storage.Config.REGION, localstack.getRegion());
+      sourceConfig.put(
+          S3Storage.Config.ENDPOINT_OVERRIDE,
+          localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString());
+      sourceTransform.configure(sourceConfig);
 
-    private String getProxiedEndpoint() {
-      return "http://" + toxiproxy.getHost() + ":" + toxiproxy.getMappedPort(8666);
+      SourceRecord initialSourceRecord = generateSourceRecord();
+      SourceRecord transformedSourceRecord = sourceTransform.apply(initialSourceRecord);
+
+      Header transformedSourceHeader =
+          transformedSourceRecord.headers().lastWithName(ClaimCheckSchema.NAME);
+
+      return generateSinkRecord(transformedSourceRecord, transformedSourceHeader);
     }
+  }
+
+  private void clearAllToxics() throws IOException {
+    for (var toxic : s3Proxy.toxics().getAll()) {
+      toxic.remove();
+    }
+  }
+
+  private String getProxiedEndpoint() {
+    return "http://" + toxiproxy.getHost() + ":" + toxiproxy.getMappedPort(8666);
+  }
+
+  private Map<String, Object> generateSourceConfigWithToxiproxy(int retryMax) {
+    Map<String, Object> config = new HashMap<>();
+    config.put(ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
+    config.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
+    config.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
+    config.put(S3Storage.Config.REGION, localstack.getRegion());
+    config.put(S3Storage.Config.ENDPOINT_OVERRIDE, getProxiedEndpoint());
+    config.put(S3Storage.Config.RETRY_MAX, retryMax);
+    config.put(S3Storage.Config.RETRY_BACKOFF_MS, 50L);
+    config.put(S3Storage.Config.RETRY_MAX_BACKOFF_MS, 100L);
+    return config;
+  }
+
+  private Map<String, Object> generateSinkConfigWithToxiproxy(int retryMax) {
+    Map<String, Object> config = new HashMap<>();
+    config.put(ClaimCheckSinkTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
+    config.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
+    config.put(S3Storage.Config.REGION, localstack.getRegion());
+    config.put(S3Storage.Config.ENDPOINT_OVERRIDE, getProxiedEndpoint());
+    config.put(S3Storage.Config.RETRY_MAX, retryMax);
+    config.put(S3Storage.Config.RETRY_BACKOFF_MS, 50L);
+    config.put(S3Storage.Config.RETRY_MAX_BACKOFF_MS, 100L);
+    return config;
   }
 
   private SourceRecord generateSourceRecord() {
