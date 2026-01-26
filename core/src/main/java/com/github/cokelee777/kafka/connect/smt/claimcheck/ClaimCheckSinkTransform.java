@@ -115,10 +115,10 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
     byte[] originalRecordBytes = retrieveOriginalRecord(claimCheckValue);
     SchemaAndValue schemaAndValue = deserializeRecord(record.topic(), originalRecordBytes);
     if (schemaAndValue == null) {
-      log.warn(
-          "Failed to restore original record from claim check reference (topic={}). Returning default value record.",
-          record.topic());
-      return record;
+      throw new ConnectException(
+          "Failed to restore original record from claim check value (topic="
+              + record.topic()
+              + ")");
     }
 
     return buildRestoredRecord(record, schemaAndValue);
