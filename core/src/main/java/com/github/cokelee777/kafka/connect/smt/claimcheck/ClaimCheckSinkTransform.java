@@ -106,21 +106,16 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
     }
 
     Header claimCheckHeader = record.headers().lastWithName(ClaimCheckSchema.NAME);
-    if (claimCheckHeader == null || claimCheckHeader.value() == null) {
+    if (claimCheckHeader == null) {
       log.debug("No claim-check header found for record from topic: {}", record.topic());
       return record;
     }
 
-    return createOriginalRecord(record, claimCheckHeader.value());
+    return createOriginalRecord(record, claimCheckHeader);
   }
 
-  private SinkRecord createOriginalRecord(SinkRecord record, Object value) {
-    ClaimCheckValue claimCheckValue = extractReference(value);
-    if (claimCheckValue == null) {
-      log.debug("No claim-check value found for header from topic: {}", record.topic());
-      return record;
-    }
-
+  private SinkRecord createOriginalRecord(SinkRecord record, Header claimCheckHeader) {
+    ClaimCheckValue claimCheckValue = extractReference(claimCheckHeader);
     String referenceUrl = claimCheckValue.getReferenceUrl();
     long originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
 
@@ -166,25 +161,46 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
     return originalRecord;
   }
 
-  private ClaimCheckValue extractReference(Object value) {
+  private ClaimCheckValue extractReference(Header header) {
+    Object value = header.value();
     if (value instanceof Struct) {
-      return ClaimCheckValue.from((Struct) value);
+      return parseFromStruct((Struct) value);
     }
 
     if (value instanceof String) {
-      try {
-        JsonNode node = OBJECT_MAPPER.readTree((String) value);
-        return ClaimCheckValue.from(node);
-      } catch (Exception e) {
-        throw new ConnectException("Failed to parse claim check header JSON", e);
-      }
+      return parseFromJson((String) value);
     }
 
     if (value instanceof Map) {
-      return ClaimCheckValue.from((Map<?, ?>) value);
+      return parseFromMap((Map<?, ?>) value);
     }
 
     throw new ConnectException("Unsupported claim check header type: " + value.getClass());
+  }
+
+  private ClaimCheckValue parseFromStruct(Struct struct) {
+    try {
+      return ClaimCheckValue.from(struct);
+    } catch (Exception e) {
+      throw new ConnectException("Failed to parse claim check header STRUCT", e);
+    }
+  }
+
+  private ClaimCheckValue parseFromJson(String json) {
+    try {
+      JsonNode node = OBJECT_MAPPER.readTree(json);
+      return ClaimCheckValue.from(node);
+    } catch (Exception e) {
+      throw new ConnectException("Failed to parse claim check header JSON", e);
+    }
+  }
+
+  private ClaimCheckValue parseFromMap(Map<?, ?> map) {
+    try {
+      return ClaimCheckValue.from(map);
+    } catch (Exception e) {
+      throw new ConnectException("Failed to parse claim check header map", e);
+    }
   }
 
   @Override
