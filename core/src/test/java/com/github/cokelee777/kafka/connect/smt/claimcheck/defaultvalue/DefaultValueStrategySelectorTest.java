@@ -123,11 +123,7 @@ class DefaultValueStrategySelectorTest {
       // When & Then
       assertThatExceptionOfType(IllegalStateException.class)
           .isThrownBy(() -> defaultValueStrategySelector.selectStrategy(record))
-          .withMessage(
-              "No strategy found for schema: "
-                  + valueSchema
-                  + ", schema type: "
-                  + valueSchema.type());
+          .withMessage("No strategy found for schema: " + valueSchema);
     }
 
     @Test
