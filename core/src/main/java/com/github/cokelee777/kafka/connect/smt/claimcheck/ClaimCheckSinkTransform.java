@@ -144,15 +144,19 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
 
   private void validateRetrievedPayload(
       byte[] originalRecordBytes, String referenceUrl, long originalSizeBytes) {
-    if (originalRecordBytes == null || originalRecordBytes.length == 0) {
+    if (originalRecordBytes == null) {
       throw new ConnectException("Failed to retrieve data from: " + referenceUrl);
     }
 
+    if (originalRecordBytes.length == 0 && originalSizeBytes > 0) {
+      throw new ConnectException("Retrieved empty data from: " + referenceUrl);
+    }
+
     if (originalRecordBytes.length != originalSizeBytes) {
-      log.warn(
-          "Size mismatch! OriginalSizeBytes: {} bytes, Retrieved: {} bytes",
-          originalSizeBytes,
-          originalRecordBytes.length);
+      throw new ConnectException(
+          String.format(
+              "Data integrity violation: size mismatch for %s (expected: %d bytes, retrieved: %d bytes)",
+              referenceUrl, originalSizeBytes, originalRecordBytes.length));
     }
   }
 
