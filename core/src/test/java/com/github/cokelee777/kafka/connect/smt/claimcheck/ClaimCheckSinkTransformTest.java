@@ -3,9 +3,7 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchemaFields;
@@ -107,7 +105,7 @@ class ClaimCheckSinkTransformTest {
 
       // Then
       assertThat(resultRecord).isEqualTo(record);
-      verify(storage, times(0)).retrieve(any());
+      verify(storage, never()).retrieve(any());
     }
 
     @Test
