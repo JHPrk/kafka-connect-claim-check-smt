@@ -3,11 +3,12 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck;
 import static org.assertj.core.api.Assertions.*;
 
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
-// Add this
-// import
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckValue;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageType;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.S3Storage;
+import eu.rekawek.toxiproxy.Proxy;
+import eu.rekawek.toxiproxy.ToxiproxyClient;
+import eu.rekawek.toxiproxy.model.ToxicDirection;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +19,8 @@ import org.apache.kafka.connect.header.Header;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.*;
+import org.testcontainers.containers.Network;
+import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -32,19 +35,39 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 @DisplayName("Claim Check SMT E2E 통합 테스트")
 class S3ClaimCheckE2EFlowTest {
 
+  private static final String TOPIC_NAME = "test-topic";
   private static final String BUCKET_NAME = "test-bucket";
+  private static final String LOCALSTACK_NETWORK_ALIAS = "localstack";
+
+  private static Network network;
 
   @Container
   private static final LocalStackContainer localstack =
-      new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.14.2"))
-          .withServices(LocalStackContainer.Service.S3);
+      new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.2.0"))
+          .withServices(LocalStackContainer.Service.S3)
+          .withNetwork(getNetwork())
+          .withNetworkAliases(LOCALSTACK_NETWORK_ALIAS);
 
-  private final ClaimCheckSourceTransform sourceTransform = new ClaimCheckSourceTransform();
-  private final ClaimCheckSinkTransform sinkTransform = new ClaimCheckSinkTransform();
+  @Container
+  private static final ToxiproxyContainer toxiproxy =
+      new ToxiproxyContainer(DockerImageName.parse("ghcr.io/shopify/toxiproxy:2.5.0"))
+          .withNetwork(getNetwork())
+          .dependsOn(localstack);
+
+  private ClaimCheckSourceTransform sourceTransform;
+  private ClaimCheckSinkTransform sinkTransform;
   private static S3Client s3Client;
+  private static Proxy s3Proxy;
+
+  private static Network getNetwork() {
+    if (network == null) {
+      network = Network.newNetwork();
+    }
+    return network;
+  }
 
   @BeforeAll
-  static void beforeAll() {
+  static void beforeAll() throws IOException {
     // S3 클라이언트 초기화
     s3Client =
         S3Client.builder()
@@ -58,11 +81,25 @@ class S3ClaimCheckE2EFlowTest {
 
     // 테스트용 S3 버킷 생성
     s3Client.createBucket(builder -> builder.bucket(BUCKET_NAME));
+
+    // Toxiproxy 설정
+    ToxiproxyClient toxiproxyClient =
+        new ToxiproxyClient(toxiproxy.getHost(), toxiproxy.getControlPort());
+    s3Proxy = toxiproxyClient.createProxy("s3", "0.0.0.0:8666", LOCALSTACK_NETWORK_ALIAS + ":4566");
   }
 
   @AfterAll
   static void afterAll() {
     s3Client.close();
+    if (network != null) {
+      network.close();
+    }
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    sourceTransform = new ClaimCheckSourceTransform();
+    sinkTransform = new ClaimCheckSinkTransform();
   }
 
   @AfterEach
@@ -71,63 +108,203 @@ class S3ClaimCheckE2EFlowTest {
     sourceTransform.close();
   }
 
-  @Test
-  @DisplayName("Sink -> Source 전체 흐름에서 메시지가 정상적으로 변환되고 원복되어야 한다.")
-  void shouldPerformClaimCheckE2EFlow() throws IOException {
-    /** Given: Common */
-    // Common config
-    Map<String, Object> commonConfig = new HashMap<>();
-    commonConfig.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
-    commonConfig.put(S3Storage.Config.REGION, localstack.getRegion());
-    commonConfig.put(
-        S3Storage.Config.ENDPOINT_OVERRIDE,
-        localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString());
+  @Nested
+  @DisplayName("정상 Flow 통합 테스트")
+  class NormalFlowIntegrationTest {
 
-    /** Given: Source */
-    // ClaimCheckSourceTransform config
-    Map<String, Object> sourceTransformConfig = new HashMap<>(commonConfig);
-    sourceTransformConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
-    sourceTransformConfig.put(
-        ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
-    sourceTransform.configure(sourceTransformConfig);
+    @Test
+    @DisplayName("Sink -> Source 전체 흐름에서 메시지가 정상적으로 변환되고 원복되어야 한다.")
+    void shouldPerformClaimCheckE2EFlow() throws IOException {
+      /** Given: Common */
+      // Common config
+      Map<String, Object> commonConfig = new HashMap<>();
+      commonConfig.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
+      commonConfig.put(S3Storage.Config.REGION, localstack.getRegion());
+      commonConfig.put(
+          S3Storage.Config.ENDPOINT_OVERRIDE,
+          localstack.getEndpointOverride(LocalStackContainer.Service.S3).toString());
 
-    // SourceRecord 생성
-    Schema originalSchema =
+      /** Given: Source */
+      // ClaimCheckSourceTransform config
+      Map<String, Object> sourceTransformConfig = new HashMap<>(commonConfig);
+      sourceTransformConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
+      sourceTransformConfig.put(
+          ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
+      sourceTransform.configure(sourceTransformConfig);
+
+      SourceRecord initialSourceRecord = generateSourceRecord();
+
+      /** When: Source */
+      SourceRecord transformedSourceRecord = sourceTransform.apply(initialSourceRecord);
+
+      /** Then: Source */
+      Header transformedSourceHeader =
+          validateTransformedSourceRecord(transformedSourceRecord, initialSourceRecord);
+
+      /** Given: Sink */
+      // ClaimCheckSinkTransform config
+      Map<String, Object> sinkTransformConfig = new HashMap<>(commonConfig);
+      sinkTransformConfig.put(
+          ClaimCheckSinkTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
+      sinkTransform.configure(sinkTransformConfig);
+
+      SinkRecord initialSinkRecord =
+          generateSinkRecord(transformedSourceRecord, transformedSourceHeader);
+
+      /** When: Sink */
+      SinkRecord restoredSinkRecord = sinkTransform.apply(initialSinkRecord);
+
+      /** Then: Sink */
+      validateRestoredSinkRecord(restoredSinkRecord, initialSourceRecord);
+    }
+  }
+
+  @Nested
+  @DisplayName("S3 재시도 통합 테스트")
+  class S3RetryIntegrationTest {
+
+    @AfterEach
+    void cleanupToxics() throws IOException {
+      clearAllToxics();
+    }
+
+    private void clearAllToxics() throws IOException {
+      for (var toxic : s3Proxy.toxics().getAll()) {
+        toxic.remove();
+      }
+    }
+
+    @Test
+    @DisplayName("일시적인 네트워크 오류 발생 시 재시도하여 성공해야 한다")
+    void shouldRetryAndSucceedOnTransientFailure() throws Exception {
+      // Given
+      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(3);
+      sourceTransform.configure(sourceTransformConfig);
+
+      SourceRecord initialSourceRecord = generateSourceRecord();
+
+      // 프록시 네트워크 연결 지연
+      s3Proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, 50);
+
+      // When
+      SourceRecord transformedRecord = sourceTransform.apply(initialSourceRecord);
+
+      // Then
+      validateTransformedSourceRecord(transformedRecord, initialSourceRecord);
+    }
+
+    @Test
+    @DisplayName("최대 재시도 횟수를 초과하면 예외가 발생해야 한다")
+    void shouldFailWhenMaxRetriesExceeded() throws Exception {
+      // Given
+      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(2);
+      sourceTransform.configure(sourceTransformConfig);
+
+      SourceRecord initialSourceRecord = generateSourceRecord();
+
+      // 프록시 네트워크 연결 완전 차단
+      s3Proxy.toxics().bandwidth("bandwidth-down", ToxicDirection.DOWNSTREAM, 0);
+      s3Proxy.toxics().bandwidth("bandwidth-up", ToxicDirection.UPSTREAM, 0);
+
+      // When & Then
+      assertThatThrownBy(() -> sourceTransform.apply(initialSourceRecord))
+          .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("재시도 설정이 0일 때 즉시 실패해야 한다")
+    void shouldFailImmediatelyWhenRetryDisabled() throws Exception {
+      // Given
+      Map<String, Object> sourceTransformConfig = generateConfigWithToxiproxy(0);
+      sourceTransform.configure(sourceTransformConfig);
+
+      SourceRecord initialSourceRecord = generateSourceRecord();
+
+      // 프록시 네트워크 연결 완전 차단
+      s3Proxy.toxics().bandwidth("bandwidth-down", ToxicDirection.DOWNSTREAM, 0);
+      s3Proxy.toxics().bandwidth("bandwidth-up", ToxicDirection.UPSTREAM, 0);
+
+      // When & Then
+      assertThatThrownBy(() -> sourceTransform.apply(initialSourceRecord))
+          .isInstanceOf(RuntimeException.class);
+    }
+
+    private Map<String, Object> generateConfigWithToxiproxy(int retryMax) {
+      return generateConfigWithToxiproxy(retryMax, 50L, 100L);
+    }
+
+    private Map<String, Object> generateConfigWithToxiproxy(
+        int retryMax, long retryBackoffMs, long retryMaxBackoffMs) {
+      Map<String, Object> sourceTransformConfig = new HashMap<>();
+      sourceTransformConfig.put(
+          ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
+      sourceTransformConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1L);
+      sourceTransformConfig.put(S3Storage.Config.BUCKET_NAME, BUCKET_NAME);
+      sourceTransformConfig.put(S3Storage.Config.REGION, localstack.getRegion());
+      sourceTransformConfig.put(S3Storage.Config.ENDPOINT_OVERRIDE, getProxiedEndpoint());
+      sourceTransformConfig.put(S3Storage.Config.RETRY_MAX, retryMax);
+      sourceTransformConfig.put(S3Storage.Config.RETRY_BACKOFF_MS, retryBackoffMs);
+      sourceTransformConfig.put(S3Storage.Config.RETRY_MAX_BACKOFF_MS, retryMaxBackoffMs);
+      return sourceTransformConfig;
+    }
+
+    private String getProxiedEndpoint() {
+      return "http://" + toxiproxy.getHost() + ":" + toxiproxy.getMappedPort(8666);
+    }
+  }
+
+  private SourceRecord generateSourceRecord() {
+    Schema schema =
         SchemaBuilder.struct()
             .field("id", Schema.INT64_SCHEMA)
             .field("name", Schema.STRING_SCHEMA)
             .build();
-    Struct originalValue = new Struct(originalSchema).put("id", 1L).put("name", "cokelee777");
-    SourceRecord originalSourceRecord =
-        new SourceRecord(null, null, "test-topic", null, null, originalSchema, originalValue);
+    Struct value = new Struct(schema).put("id", 1L).put("name", "cokelee777");
+    return new SourceRecord(null, null, TOPIC_NAME, null, null, schema, value);
+  }
 
-    /** When: Source */
-    SourceRecord claimCheckSourceRecord = sourceTransform.apply(originalSourceRecord);
+  private SinkRecord generateSinkRecord(
+      SourceRecord transformedSourceRecord, Header transformedSourceHeader) {
+    SinkRecord sinkRecord =
+        new SinkRecord(
+            transformedSourceRecord.topic(),
+            0,
+            transformedSourceRecord.keySchema(),
+            transformedSourceRecord.key(),
+            transformedSourceRecord.valueSchema(),
+            transformedSourceRecord.value(),
+            0);
+    sinkRecord.headers().add(transformedSourceHeader);
+    return sinkRecord;
+  }
 
-    /** Then: Source */
+  private Header validateTransformedSourceRecord(
+      SourceRecord transformedSourceRecord, SourceRecord initialSourceRecord) throws IOException {
     // ClaimCheckSourceRecord 검증
-    assertThat(claimCheckSourceRecord).isNotNull();
-    assertThat(claimCheckSourceRecord.topic()).isEqualTo("test-topic");
-    assertThat(claimCheckSourceRecord.keySchema()).isNull();
-    assertThat(claimCheckSourceRecord.key()).isNull();
-    assertThat(claimCheckSourceRecord.valueSchema()).isEqualTo(originalSchema);
-    assertThat(claimCheckSourceRecord.value()).isNotNull();
-    assertThat(claimCheckSourceRecord.value()).isInstanceOf(Struct.class);
+    assertThat(transformedSourceRecord).isNotNull();
+    assertThat(transformedSourceRecord.topic()).isEqualTo(TOPIC_NAME);
+    assertThat(transformedSourceRecord.keySchema()).isNull();
+    assertThat(transformedSourceRecord.key()).isNull();
+    assertThat(transformedSourceRecord.valueSchema()).isEqualTo(initialSourceRecord.valueSchema());
+    assertThat(transformedSourceRecord.value()).isNotNull();
+    assertThat(transformedSourceRecord.value()).isInstanceOf(Struct.class);
+    assertThat(transformedSourceRecord.value()).isNotEqualTo(initialSourceRecord);
 
     // GenericStructStrategy 적용되어 모든 필드가 기본값으로 설정됨
-    assertThat(((Struct) claimCheckSourceRecord.value()).getInt64("id")).isEqualTo(0L);
-    assertThat(((Struct) claimCheckSourceRecord.value()).getString("name")).isEqualTo("");
+    assertThat(((Struct) transformedSourceRecord.value()).getInt64("id")).isEqualTo(0L);
+    assertThat(((Struct) transformedSourceRecord.value()).getString("name")).isEqualTo("");
 
     // ClaimCheckSourceHeader 검증
-    Header claimCheckSourceHeader =
-        claimCheckSourceRecord.headers().lastWithName(ClaimCheckSchema.NAME);
-    assertThat(claimCheckSourceHeader).isNotNull();
-    assertThat(claimCheckSourceHeader.key()).isEqualTo(ClaimCheckSchema.NAME);
-    assertThat(claimCheckSourceHeader.schema()).isEqualTo(ClaimCheckSchema.SCHEMA);
-    assertThat(claimCheckSourceHeader.value()).isInstanceOf(Struct.class);
+    Header transformedSourceHeader =
+        transformedSourceRecord.headers().lastWithName(ClaimCheckSchema.NAME);
+    assertThat(transformedSourceHeader).isNotNull();
+    assertThat(transformedSourceHeader.key()).isEqualTo(ClaimCheckSchema.NAME);
+    assertThat(transformedSourceHeader.schema()).isEqualTo(ClaimCheckSchema.SCHEMA);
+    assertThat(transformedSourceHeader.value()).isInstanceOf(Struct.class);
 
     // 실제 데이터 검증
-    ClaimCheckValue claimCheckValue = ClaimCheckValue.from((Struct) claimCheckSourceHeader.value());
+    ClaimCheckValue claimCheckValue =
+        ClaimCheckValue.from((Struct) transformedSourceHeader.value());
     String referenceUrl = claimCheckValue.getReferenceUrl();
     long originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
 
@@ -135,35 +312,23 @@ class S3ClaimCheckE2EFlowTest {
     assertThat(originalSizeBytes).isGreaterThan(0);
 
     // S3에 실제 데이터가 저장되었는지 확인
-    String s3Key = referenceUrl.substring(("s3://" + BUCKET_NAME + "/").length());
-    GetObjectRequest getObjectRequest =
-        GetObjectRequest.builder().bucket(BUCKET_NAME).key(s3Key).build();
-    byte[] serializedRecord = s3Client.getObject(getObjectRequest).readAllBytes();
+    String key = referenceUrl.substring(("s3://" + BUCKET_NAME + "/").length());
+    byte[] serializedRecord =
+        s3Client
+            .getObject(GetObjectRequest.builder().bucket(BUCKET_NAME).key(key).build())
+            .readAllBytes();
     assertThat(serializedRecord).isNotEmpty();
     assertThat(serializedRecord.length).isEqualTo(originalSizeBytes);
+    return transformedSourceHeader;
+  }
 
-    /** Given: Sink */
-    // ClaimCheckSinkTransform config
-    Map<String, Object> sinkTransformConfig = new HashMap<>(commonConfig);
-    sinkTransformConfig.put(
-        ClaimCheckSinkTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.S3.type());
-    sinkTransform.configure(sinkTransformConfig);
-
-    // SinkRecord 생성
-    Struct sinkValue = new Struct(originalSchema).put("id", 0L).put("name", "");
-    SinkRecord sinkRecord =
-        new SinkRecord(claimCheckSourceRecord.topic(), 0, null, null, originalSchema, sinkValue, 0);
-    claimCheckSourceRecord.headers().forEach(header -> sinkRecord.headers().add(header));
-
-    /** When: Sink */
-    SinkRecord restoredSinkRecord = sinkTransform.apply(sinkRecord);
-
-    /** Then: Sink */
+  private void validateRestoredSinkRecord(
+      SinkRecord restoredSinkRecord, SourceRecord initialSourceRecord) {
     assertThat(restoredSinkRecord).isNotNull();
-    assertThat(restoredSinkRecord.topic()).isEqualTo("test-topic");
+    assertThat(restoredSinkRecord.topic()).isEqualTo(TOPIC_NAME);
     assertThat(restoredSinkRecord.keySchema()).isNull();
     assertThat(restoredSinkRecord.key()).isNull();
-    assertThat(restoredSinkRecord.valueSchema()).isEqualTo(originalSchema);
+    assertThat(restoredSinkRecord.valueSchema()).isEqualTo(initialSourceRecord.valueSchema());
     assertThat(restoredSinkRecord.value()).isNotNull();
     assertThat(restoredSinkRecord.value()).isInstanceOf(Struct.class);
 
@@ -171,19 +336,10 @@ class S3ClaimCheckE2EFlowTest {
     Struct restoredValue = (Struct) restoredSinkRecord.value();
     assertThat(restoredValue.getInt64("id")).isEqualTo(1L);
     assertThat(restoredValue.getString("name")).isEqualTo("cokelee777");
-    assertThat(restoredValue).isEqualTo(originalValue);
+    assertThat(restoredValue).isEqualTo(initialSourceRecord.value());
 
-    // ClaimCheck 헤더가 여전히 존재하는지 확인
+    // ClaimCheck 헤더가 제거되었는지 확인
     Header claimCheckSinkHeader = restoredSinkRecord.headers().lastWithName(ClaimCheckSchema.NAME);
-    assertThat(claimCheckSinkHeader).isNotNull();
-    assertThat(claimCheckSinkHeader.key()).isEqualTo(ClaimCheckSchema.NAME);
-    assertThat(claimCheckSinkHeader.schema()).isEqualTo(ClaimCheckSchema.SCHEMA);
-    assertThat(claimCheckSinkHeader.value()).isInstanceOf(Struct.class);
-
-    // 헤더의 referenceUrl이 동일한지 검증
-    ClaimCheckValue restoredClaimCheckValue =
-        ClaimCheckValue.from((Struct) claimCheckSinkHeader.value());
-    assertThat(restoredClaimCheckValue.getReferenceUrl()).isEqualTo(referenceUrl);
-    assertThat(restoredClaimCheckValue.getOriginalSizeBytes()).isEqualTo(originalSizeBytes);
+    assertThat(claimCheckSinkHeader).isNull();
   }
 }
