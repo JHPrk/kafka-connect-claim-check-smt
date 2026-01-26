@@ -13,10 +13,10 @@ public class ClaimCheckValue {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private final String referenceUrl;
-  private final long originalSizeBytes;
+  private final int originalSizeBytes;
   private final long uploadedAt;
 
-  private ClaimCheckValue(String referenceUrl, long originalSizeBytes, long uploadedAt) {
+  private ClaimCheckValue(String referenceUrl, int originalSizeBytes, long uploadedAt) {
     this.referenceUrl = referenceUrl;
     this.originalSizeBytes = originalSizeBytes;
     this.uploadedAt = uploadedAt;
@@ -28,7 +28,7 @@ public class ClaimCheckValue {
   }
 
   /** Returns the original payload size in bytes. */
-  public long getOriginalSizeBytes() {
+  public int getOriginalSizeBytes() {
     return originalSizeBytes;
   }
 
@@ -39,7 +39,7 @@ public class ClaimCheckValue {
    * @param originalSizeBytes the original payload size in bytes
    * @return a new ClaimCheckValue instance
    */
-  public static ClaimCheckValue create(String referenceUrl, long originalSizeBytes) {
+  public static ClaimCheckValue create(String referenceUrl, int originalSizeBytes) {
     if (referenceUrl == null || referenceUrl.isBlank()) {
       throw new IllegalArgumentException("referenceUrl must be non-blank");
     }
@@ -84,7 +84,7 @@ public class ClaimCheckValue {
 
   private static ClaimCheckValue from(Struct struct) {
     String referenceUrl = struct.getString(ClaimCheckSchemaFields.REFERENCE_URL);
-    Long originalSizeBytes = struct.getInt64(ClaimCheckSchemaFields.ORIGINAL_SIZE_BYTES);
+    Integer originalSizeBytes = struct.getInt32(ClaimCheckSchemaFields.ORIGINAL_SIZE_BYTES);
     Long uploadedAt = struct.getInt64(ClaimCheckSchemaFields.UPLOADED_AT);
     if (referenceUrl == null || originalSizeBytes == null || uploadedAt == null) {
       throw new ConnectException("Missing required fields in claim check Struct");
@@ -103,7 +103,7 @@ public class ClaimCheckValue {
 
     return new ClaimCheckValue(
         referenceUrl.toString(),
-        Long.parseLong(originalSizeBytes.toString()),
+        Integer.parseInt(originalSizeBytes.toString()),
         Long.parseLong(uploadedAt.toString()));
   }
 
@@ -125,6 +125,6 @@ public class ClaimCheckValue {
     }
 
     return new ClaimCheckValue(
-        referenceUrlNode.asText(), originalSizeBytesNode.asLong(), uploadedAtNode.asLong());
+        referenceUrlNode.asText(), originalSizeBytesNode.asInt(), uploadedAtNode.asLong());
   }
 }

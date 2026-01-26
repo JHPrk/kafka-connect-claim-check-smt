@@ -37,7 +37,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     public static final String THRESHOLD_BYTES = "threshold.bytes";
 
     /** Default threshold: 1MB (1024 * 1024 bytes) */
-    private static final long DEFAULT_THRESHOLD_BYTES = 1024L * 1024L;
+    private static final int DEFAULT_THRESHOLD_BYTES = 1024 * 1024;
 
     public static final ConfigDef DEFINITION =
         new ConfigDef()
@@ -50,9 +50,9 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
                 "Storage implementation type")
             .define(
                 THRESHOLD_BYTES,
-                ConfigDef.Type.LONG,
+                ConfigDef.Type.INT,
                 DEFAULT_THRESHOLD_BYTES,
-                ConfigDef.Range.atLeast(1L),
+                ConfigDef.Range.atLeast(1),
                 ConfigDef.Importance.HIGH,
                 "Payload size threshold in bytes");
 
@@ -66,7 +66,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
   }
 
   private String storageType;
-  private long thresholdBytes;
+  private int thresholdBytes;
   private ClaimCheckStorage storage;
   private RecordSerializer recordSerializer;
   private DefaultValueStrategySelector defaultValueStrategySelector;
@@ -98,7 +98,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
     return recordSerializer;
   }
 
-  public long getThresholdBytes() {
+  public int getThresholdBytes() {
     return this.thresholdBytes;
   }
 
@@ -106,7 +106,7 @@ public class ClaimCheckSourceTransform implements Transformation<SourceRecord> {
   public void configure(Map<String, ?> configs) {
     TransformConfig config = new TransformConfig(configs);
 
-    this.thresholdBytes = config.getLong(Config.THRESHOLD_BYTES);
+    this.thresholdBytes = config.getInt(Config.THRESHOLD_BYTES);
     this.storageType = config.getString(Config.STORAGE_TYPE);
 
     if (this.storage == null) {

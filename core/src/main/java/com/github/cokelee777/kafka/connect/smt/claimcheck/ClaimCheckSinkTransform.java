@@ -136,7 +136,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
 
   private byte[] retrieveOriginalRecord(ClaimCheckValue claimCheckValue) {
     String referenceUrl = claimCheckValue.getReferenceUrl();
-    long originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
+    int originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
 
     log.debug(
         "Recovering claim check record from: {}, original size: {} bytes",
@@ -149,7 +149,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
   }
 
   private void validateRetrievedPayload(
-      byte[] originalRecordBytes, String referenceUrl, long originalSizeBytes) {
+      byte[] originalRecordBytes, String referenceUrl, int originalSizeBytes) {
     if (originalRecordBytes == null) {
       throw new ConnectException("Failed to retrieve data from: " + referenceUrl);
     }

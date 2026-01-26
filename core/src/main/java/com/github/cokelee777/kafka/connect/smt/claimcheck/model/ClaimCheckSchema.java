@@ -12,7 +12,7 @@ public final class ClaimCheckSchema {
       SchemaBuilder.struct()
           .name(NAME)
           .field(ClaimCheckSchemaFields.REFERENCE_URL, Schema.STRING_SCHEMA)
-          .field(ClaimCheckSchemaFields.ORIGINAL_SIZE_BYTES, Schema.INT64_SCHEMA)
+          .field(ClaimCheckSchemaFields.ORIGINAL_SIZE_BYTES, Schema.INT32_SCHEMA)
           .field(ClaimCheckSchemaFields.UPLOADED_AT, Schema.INT64_SCHEMA)
           .build();
 
