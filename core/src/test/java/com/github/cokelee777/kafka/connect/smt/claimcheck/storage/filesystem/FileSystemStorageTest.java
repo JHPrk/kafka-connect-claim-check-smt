@@ -11,10 +11,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigException;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
 @DisplayName("FileSystemStorage 단위 테스트")
@@ -35,7 +32,7 @@ class FileSystemStorageTest {
 
     @Test
     @DisplayName("올바른 설정정보를 세팅하면 정상적으로 구성된다.")
-    void rightConfig() {
+    void rightConfig() throws IOException {
       // Given
       Map<String, String> configs = Map.of(FileSystemStorage.Config.PATH, tempDir.toString());
 
@@ -43,7 +40,7 @@ class FileSystemStorageTest {
       fileSystemStorage.configure(configs);
 
       // Then
-      assertThat(fileSystemStorage.getStoragePath()).isEqualTo(tempDir);
+      assertThat(fileSystemStorage.getStoragePath()).isEqualTo(tempDir.toRealPath());
     }
 
     @Test
@@ -88,6 +85,7 @@ class FileSystemStorageTest {
       File readOnlyDir = tempDir.resolve("read-only").toFile();
       readOnlyDir.mkdir();
       readOnlyDir.setReadOnly();
+      Assumptions.assumeTrue(!readOnlyDir.canWrite(), "bypass read-only permission");
 
       Map<String, String> configs =
           Map.of(FileSystemStorage.Config.PATH, readOnlyDir.getAbsolutePath());
@@ -139,7 +137,7 @@ class FileSystemStorageTest {
       // When & Then
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(() -> fileSystemStorage.retrieve(referenceUrl))
-          .withMessageStartingWith("Claim check file does not exist:");
+          .withMessageStartingWith("Claim check file does not exist or cannot be accessed:");
     }
 
     @Test

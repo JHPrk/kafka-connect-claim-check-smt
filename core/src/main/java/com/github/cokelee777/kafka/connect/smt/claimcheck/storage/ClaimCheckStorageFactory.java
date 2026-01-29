@@ -25,7 +25,7 @@ public class ClaimCheckStorageFactory {
   /**
    * Creates a storage instance of the specified type.
    *
-   * @param type the storage type (e.g., s3, file system)
+   * @param type the storage type (e.g., s3, filesystem)
    * @return a new ClaimCheckStorage instance
    * @throws ConfigException if the type is unsupported or blank
    */

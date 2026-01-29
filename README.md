@@ -149,6 +149,14 @@ To use the ClaimCheck SMT, you'll need to configure it in your Kafka Connect con
 }
 ```
 
+**Important for Distributed Deployments:** When using File System storage in a distributed Kafka Connect cluster with multiple workers:
+
+- Use a **shared network storage** (e.g., NFS, SMB/CIFS, or a distributed file system) mounted at the same path on all worker nodes
+- Ensure all Kafka Connect worker processes have **read/write permissions** to the storage path
+- Use **absolute paths** to avoid ambiguity across different worker environments
+- For production deployments, consider implementing **file system monitoring and alerting** for storage availability
+- **Security:** Ensure proper file permissions are set to restrict access to authorized Connect workers only. Consider encryption at rest for sensitive payloads.
+
 ##### Sink Connector Configuration
 
 *S3 Storage Example:*
@@ -220,7 +228,7 @@ To use the ClaimCheck SMT, you'll need to configure it in your Kafka Connect con
 
 | Property                    | Required | Default          | Description                                                                                                                                |
 |-----------------------------|----------|------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| `storage.filesystem.path`   | No       | `claim-checks`   | The directory path for storing claim check files. This can be a local path or a network-mounted path (e.g., NFS, SMB). The path is created if it does not exist. |
+| `storage.filesystem.path`   | No       | `claim-checks`   | The directory path for storing claim check files. **Absolute paths are strongly recommended for production deployments**. This can be a local path (single-worker only) or a network-mounted path (e.g., NFS, SMB) for distributed deployments. The path is created if it does not exist with default system permissions. Ensure proper read/write permissions for the Connect worker process. |
 
 > **Important:** The Sink connector's storage configuration must match the Source
 > connector's configuration to correctly retrieve the offloaded payloads. For example, if using the File System backend, both connectors must point to the same directory path.

@@ -167,7 +167,7 @@ class FileSystemClaimCheckE2EFlowTest {
     String referenceUrl = claimCheckValue.getReferenceUrl();
     int originalSizeBytes = claimCheckValue.getOriginalSizeBytes();
 
-    assertThat(referenceUrl).startsWith("file://" + tempDirPath.toAbsolutePath() + "/");
+    assertThat(referenceUrl).startsWith("file://" + tempDirPath.toRealPath() + "/");
     assertThat(originalSizeBytes).isGreaterThan(0);
 
     // 파일 시스템에 실제 데이터가 저장되었는지 확인

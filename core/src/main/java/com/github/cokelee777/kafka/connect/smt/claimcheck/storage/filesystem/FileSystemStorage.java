@@ -62,6 +62,13 @@ public class FileSystemStorage implements ClaimCheckStorage {
     this.storagePath = Paths.get(path).toAbsolutePath().normalize();
 
     ensureStorageDirectoryExists();
+
+    try {
+      this.storagePath = this.storagePath.toRealPath();
+    } catch (IOException e) {
+      throw new ConfigException(
+          "Failed to resolve real path for storage directory: " + this.storagePath, e);
+    }
   }
 
   private void ensureStorageDirectoryExists() {
@@ -111,12 +118,12 @@ public class FileSystemStorage implements ClaimCheckStorage {
     checkStoragePathInitialized();
 
     Path filePath = parsePathFrom(referenceUrl);
-    validateFilePath(filePath);
+    Path realPath = validateAndGetRealPath(filePath);
 
     try {
-      return Files.readAllBytes(filePath);
+      return Files.readAllBytes(realPath);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to read claim check file: " + filePath, e);
+      throw new RuntimeException("Failed to read claim check file: " + realPath, e);
     }
   }
 
@@ -139,21 +146,27 @@ public class FileSystemStorage implements ClaimCheckStorage {
     return Paths.get(pathStr).toAbsolutePath().normalize();
   }
 
-  private void validateFilePath(Path filePath) {
-    if (!filePath.startsWith(this.storagePath)) {
+  private Path validateAndGetRealPath(Path filePath) {
+    Path realPath;
+    try {
+      realPath = filePath.toRealPath();
+    } catch (IOException e) {
+      throw new IllegalArgumentException(
+          "Claim check file does not exist or cannot be accessed: " + filePath, e);
+    }
+
+    if (!realPath.startsWith(this.storagePath)) {
       throw new IllegalArgumentException(
           String.format(
-              "File path '%s' is outside the configured storage path '%s'",
-              filePath, this.storagePath));
+              "Resolved file path '%s' is outside the configured storage path '%s'",
+              realPath, this.storagePath));
     }
 
-    if (!Files.exists(filePath)) {
-      throw new IllegalArgumentException("Claim check file does not exist: " + filePath);
+    if (!Files.isRegularFile(realPath)) {
+      throw new IllegalArgumentException("Claim check path is not a regular file: " + realPath);
     }
 
-    if (!Files.isRegularFile(filePath)) {
-      throw new IllegalArgumentException("Claim check path is not a regular file: " + filePath);
-    }
+    return realPath;
   }
 
   @Override
