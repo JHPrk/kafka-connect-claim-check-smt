@@ -2,6 +2,7 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.type.S3Storage;
 import com.github.cokelee777.kafka.connect.smt.common.retry.RetryConfig;
 import java.io.Serializable;
 import java.time.Duration;

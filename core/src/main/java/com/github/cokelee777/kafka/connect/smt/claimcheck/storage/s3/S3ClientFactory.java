@@ -61,11 +61,11 @@ public class S3ClientFactory {
   }
 
   private void configureRegion(S3ClientBuilder builder, S3ClientConfig config) {
-    builder.region(Region.of(config.getRegion()));
+    builder.region(Region.of(config.region()));
   }
 
   private void configureEndpoint(S3ClientBuilder builder, S3ClientConfig config) {
-    String endpointOverride = config.getEndpointOverride();
+    String endpointOverride = config.endpointOverride();
     if (endpointOverride != null) {
       builder.endpointOverride(URI.create(endpointOverride));
       builder.forcePathStyle(true);
@@ -79,11 +79,11 @@ public class S3ClientFactory {
   }
 
   private RetryConfig createRetryConfig(S3ClientConfig config) {
-    int maxAttempts = config.getRetryMax() + INITIAL_ATTEMPT;
+    int maxAttempts = config.retryMax() + INITIAL_ATTEMPT;
     return new RetryConfig(
         maxAttempts,
-        Duration.ofMillis(config.getRetryBackoffMs()),
-        Duration.ofMillis(config.getRetryMaxBackoffMs()));
+        Duration.ofMillis(config.retryBackoffMs()),
+        Duration.ofMillis(config.retryMaxBackoffMs()));
   }
 
   StandardRetryStrategy createRetryStrategy(RetryConfig config) {

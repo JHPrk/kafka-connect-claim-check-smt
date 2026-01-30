@@ -1,7 +1,8 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.type;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorage;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageType;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.S3ClientConfig;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3.S3ClientFactory;
 import com.github.cokelee777.kafka.connect.smt.common.utils.PathUtils;
 import java.io.IOException;
 import java.util.Map;
@@ -18,7 +19,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-public class S3Storage implements ClaimCheckStorage {
+public final class S3Storage implements ClaimCheckStorage {
 
   public static final class Config {
 
