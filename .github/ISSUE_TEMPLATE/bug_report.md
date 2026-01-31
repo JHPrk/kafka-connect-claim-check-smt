@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help us improve
 title: "[bug] "
-labels: bug, enhancement
+labels: bug
 assignees: ''
 
 ---
@@ -25,7 +25,3 @@ A clear and concise description of what you expected to happen.
 ## 📸 Screenshots / Logs
 
 If applicable, add screenshots or logs to help explain your problem.
-
-## 🙋 Additional context
-
-Add any other context about the problem here.
