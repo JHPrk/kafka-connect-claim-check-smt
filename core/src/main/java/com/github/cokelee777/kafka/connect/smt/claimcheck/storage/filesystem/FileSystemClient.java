@@ -90,8 +90,8 @@ public final class FileSystemClient {
     return !(e instanceof FileNotFoundException
         || e instanceof NoSuchFileException
         || e instanceof AccessDeniedException
-        || e instanceof FileSystemException
+        || (e instanceof FileSystemException
             && e.getMessage() != null
-            && e.getMessage().contains("Read-only file system"));
+            && e.getMessage().contains("Read-only file system")));
   }
 }
