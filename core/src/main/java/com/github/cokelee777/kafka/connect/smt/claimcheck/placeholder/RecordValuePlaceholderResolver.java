@@ -1,0 +1,49 @@
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder;
+
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type.DebeziumStructRecordValuePlaceholder;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type.GenericStructRecordValuePlaceholder;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type.RecordValuePlaceholder;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type.SchemalessRecordValuePlaceholder;
+import java.util.List;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.source.SourceRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/** Resolves the appropriate {@link RecordValuePlaceholder} for a given record. */
+public class RecordValuePlaceholderResolver {
+
+  private static final Logger log = LoggerFactory.getLogger(RecordValuePlaceholderResolver.class);
+
+  private static final List<RecordValuePlaceholder> STRATEGIES =
+      List.of(
+          new DebeziumStructRecordValuePlaceholder(),
+          new GenericStructRecordValuePlaceholder(),
+          new SchemalessRecordValuePlaceholder());
+
+  private RecordValuePlaceholderResolver() {}
+
+  /**
+   * Resolves the first strategy that can handle the given record.
+   *
+   * @param record the source record to resolve a strategy for
+   * @return the matching strategy
+   * @throws IllegalArgumentException if record is null
+   * @throws IllegalStateException if no strategy can handle the record
+   */
+  public static RecordValuePlaceholder resolve(SourceRecord record) {
+    if (record == null) {
+      throw new IllegalArgumentException("Source record cannot be null");
+    }
+
+    Schema schema = record.valueSchema();
+    for (RecordValuePlaceholder strategy : STRATEGIES) {
+      if (strategy.canHandle(record)) {
+        log.debug("Resolved strategy: {} for schema: {}", strategy.getStrategyType(), schema);
+        return strategy;
+      }
+    }
+
+    throw new IllegalStateException("No strategy found for schema: " + schema);
+  }
+}

@@ -1,4 +1,4 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
@@ -10,10 +10,10 @@ import org.apache.kafka.connect.source.SourceRecord;
  * <p>Used by the Source Transform to maintain schema compatibility while the actual data is stored
  * externally.
  */
-public sealed interface PlaceholderStrategy
-    permits DebeziumStructPlaceholderStrategy,
-        GenericStructPlaceholderStrategy,
-        SchemalessPlaceholderStrategy {
+public sealed interface RecordValuePlaceholder
+    permits DebeziumStructRecordValuePlaceholder,
+        GenericStructRecordValuePlaceholder,
+        SchemalessRecordValuePlaceholder {
 
   /**
    * Returns the strategy type identifier.

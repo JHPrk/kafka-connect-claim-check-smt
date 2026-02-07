@@ -1,15 +1,14 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.ClaimCheckSinkTransformConfig;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckValue;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageFactory;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageType;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.type.ClaimCheckStorage;
 import com.github.cokelee777.kafka.connect.smt.common.serialization.RecordSerializer;
 import com.github.cokelee777.kafka.connect.smt.common.serialization.RecordSerializerFactory;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.data.SchemaAndValue;
 import org.apache.kafka.connect.errors.ConnectException;
@@ -29,51 +28,14 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
 
   private static final Logger log = LoggerFactory.getLogger(ClaimCheckSinkTransform.class);
 
-  public static class Config {
-
-    public static final String STORAGE_TYPE = "storage.type";
-
-    public static final ConfigDef DEFINITION =
-        new ConfigDef()
-            .define(
-                STORAGE_TYPE,
-                ConfigDef.Type.STRING,
-                ConfigDef.NO_DEFAULT_VALUE,
-                ConfigDef.ValidString.in(
-                    ClaimCheckStorageType.S3.type(), ClaimCheckStorageType.FILESYSTEM.type()),
-                ConfigDef.Importance.HIGH,
-                "Storage implementation type (s3, filesystem)");
-
-    private Config() {}
-  }
-
-  private static class TransformConfig extends AbstractConfig {
-    TransformConfig(Map<String, ?> originals) {
-      super(ClaimCheckSinkTransform.Config.DEFINITION, originals);
-    }
-  }
-
-  private String storageType;
+  private ClaimCheckSinkTransformConfig config;
   private ClaimCheckStorage storage;
   private RecordSerializer recordSerializer;
 
   public ClaimCheckSinkTransform() {}
 
-  public ClaimCheckSinkTransform(ClaimCheckStorage storage) {
-    this.storage = storage;
-  }
-
-  public ClaimCheckSinkTransform(RecordSerializer recordSerializer) {
-    this.recordSerializer = recordSerializer;
-  }
-
-  public ClaimCheckSinkTransform(ClaimCheckStorage storage, RecordSerializer recordSerializer) {
-    this.storage = storage;
-    this.recordSerializer = recordSerializer;
-  }
-
-  public String getStorageType() {
-    return storageType;
+  public ClaimCheckSinkTransformConfig getConfig() {
+    return config;
   }
 
   public ClaimCheckStorage getStorage() {
@@ -86,20 +48,18 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
 
   @Override
   public void configure(Map<String, ?> configs) {
-    TransformConfig config = new TransformConfig(configs);
+    config = new ClaimCheckSinkTransformConfig(configs);
 
-    this.storageType = config.getString(Config.STORAGE_TYPE);
-
-    if (this.storage == null) {
-      this.storage = ClaimCheckStorageFactory.create(this.storageType);
+    if (storage == null) {
+      storage = ClaimCheckStorageFactory.create(config.getStorageType());
     }
-    Objects.requireNonNull(this.storage, "ClaimCheckStorage not configured");
-    this.storage.configure(configs);
+    Objects.requireNonNull(storage, "ClaimCheckStorage not configured");
+    storage.configure(configs);
 
-    if (this.recordSerializer == null) {
-      this.recordSerializer = RecordSerializerFactory.create();
+    if (recordSerializer == null) {
+      recordSerializer = RecordSerializerFactory.create();
     }
-    Objects.requireNonNull(this.recordSerializer, "RecordSerializer not configured");
+    Objects.requireNonNull(recordSerializer, "RecordSerializer not configured");
   }
 
   @Override
@@ -144,7 +104,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
         referenceUrl,
         originalSizeBytes);
 
-    byte[] originalRecordBytes = this.storage.retrieve(referenceUrl);
+    byte[] originalRecordBytes = storage.retrieve(referenceUrl);
     validateRetrievedPayload(originalRecordBytes, referenceUrl, originalSizeBytes);
     return originalRecordBytes;
   }
@@ -168,7 +128,7 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
   }
 
   private SchemaAndValue deserializeRecord(String topic, byte[] originalRecordBytes) {
-    return this.recordSerializer.deserialize(topic, originalRecordBytes);
+    return recordSerializer.deserialize(topic, originalRecordBytes);
   }
 
   private SinkRecord buildRestoredRecord(SinkRecord record, SchemaAndValue schemaAndValue) {
@@ -190,13 +150,13 @@ public class ClaimCheckSinkTransform implements Transformation<SinkRecord> {
 
   @Override
   public ConfigDef config() {
-    return Config.DEFINITION;
+    return ClaimCheckSinkTransformConfig.configDef();
   }
 
   @Override
   public void close() {
-    if (this.storage != null) {
-      this.storage.close();
+    if (storage != null) {
+      storage.close();
     }
   }
 }

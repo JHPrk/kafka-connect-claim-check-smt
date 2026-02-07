@@ -1,14 +1,14 @@
 package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder;
 
 /** Supported placeholder strategy types. */
-public enum PlaceholderStrategyType {
+public enum RecordValuePlaceholderType {
   SCHEMALESS("schemaless"),
   DEBEZIUM_STRUCT("debezium_struct"),
   GENERIC_STRUCT("generic_struct");
 
   private final String type;
 
-  PlaceholderStrategyType(String type) {
+  RecordValuePlaceholderType(String type) {
     this.type = type;
   }
 

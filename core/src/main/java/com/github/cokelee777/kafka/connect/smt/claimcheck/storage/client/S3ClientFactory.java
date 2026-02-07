@@ -1,14 +1,14 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.s3;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.client;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.storage.S3StorageConfig;
 import com.github.cokelee777.kafka.connect.smt.common.retry.RetryConfig;
 import java.net.URI;
 import java.time.Duration;
-import java.util.Objects;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.http.SdkHttpClient;
-import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.StandardRetryStrategy;
 import software.amazon.awssdk.retries.api.BackoffStrategy;
@@ -20,25 +20,7 @@ public class S3ClientFactory {
 
   private static final int INITIAL_ATTEMPT = 1;
 
-  private final SdkHttpClient httpClient;
-  private final AwsCredentialsProvider credentialsProvider;
-
-  /** Creates a factory with default AWS SDK components. */
-  public S3ClientFactory() {
-    this(UrlConnectionHttpClient.builder().build(), DefaultCredentialsProvider.builder().build());
-  }
-
-  /**
-   * Creates a factory with custom AWS SDK components.
-   *
-   * @param httpClient HTTP client for S3 requests
-   * @param credentialsProvider AWS credentials provider
-   */
-  public S3ClientFactory(SdkHttpClient httpClient, AwsCredentialsProvider credentialsProvider) {
-    this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
-    this.credentialsProvider =
-        Objects.requireNonNull(credentialsProvider, "credentialsProvider must not be null");
-  }
+  private S3ClientFactory() {}
 
   /**
    * Creates a configured S3 client.
@@ -46,36 +28,39 @@ public class S3ClientFactory {
    * @param config the S3 client configuration
    * @return a configured S3Client instance
    */
-  public S3Client create(S3ClientConfig config) {
+  public static S3Client create(S3StorageConfig config) {
+    SdkHttpClient httpClient = ApacheHttpClient.builder().build();
+    AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.builder().build();
+
     S3ClientBuilder builder =
         S3Client.builder()
             .httpClient(httpClient)
             .credentialsProvider(credentialsProvider)
             .overrideConfiguration(createOverrideConfiguration(config))
-            .region(Region.of(config.region()));
+            .region(Region.of(config.getRegion()));
 
-    if (config.endpointOverride() != null) {
-      builder.endpointOverride(URI.create(config.endpointOverride())).forcePathStyle(true);
+    if (config.getEndpointOverride() != null) {
+      builder.endpointOverride(URI.create(config.getEndpointOverride())).forcePathStyle(true);
     }
 
     return builder.build();
   }
 
-  ClientOverrideConfiguration createOverrideConfiguration(S3ClientConfig config) {
+  private static ClientOverrideConfiguration createOverrideConfiguration(S3StorageConfig config) {
     RetryConfig retryConfig = createRetryConfig(config);
     StandardRetryStrategy retryStrategy = createRetryStrategy(retryConfig);
     return ClientOverrideConfiguration.builder().retryStrategy(retryStrategy).build();
   }
 
-  private RetryConfig createRetryConfig(S3ClientConfig config) {
-    int maxAttempts = config.retryMax() + INITIAL_ATTEMPT;
+  private static RetryConfig createRetryConfig(S3StorageConfig config) {
+    int maxAttempts = config.getRetryMax() + INITIAL_ATTEMPT;
     return new RetryConfig(
         maxAttempts,
-        Duration.ofMillis(config.retryBackoffMs()),
-        Duration.ofMillis(config.retryMaxBackoffMs()));
+        Duration.ofMillis(config.getRetryBackoffMs()),
+        Duration.ofMillis(config.getRetryMaxBackoffMs()));
   }
 
-  StandardRetryStrategy createRetryStrategy(RetryConfig config) {
+  private static StandardRetryStrategy createRetryStrategy(RetryConfig config) {
     BackoffStrategy backoffStrategy =
         BackoffStrategy.exponentialDelay(config.initialBackoff(), config.maxBackoff());
 

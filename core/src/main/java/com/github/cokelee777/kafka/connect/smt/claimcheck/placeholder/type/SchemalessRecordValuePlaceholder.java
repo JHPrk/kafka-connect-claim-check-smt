@@ -1,18 +1,18 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.PlaceholderStrategyType;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.RecordValuePlaceholderType;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class SchemalessPlaceholderStrategy implements PlaceholderStrategy {
+public final class SchemalessRecordValuePlaceholder implements RecordValuePlaceholder {
 
-  private static final Logger log = LoggerFactory.getLogger(SchemalessPlaceholderStrategy.class);
+  private static final Logger log = LoggerFactory.getLogger(SchemalessRecordValuePlaceholder.class);
 
   @Override
   public String getStrategyType() {
-    return PlaceholderStrategyType.SCHEMALESS.type();
+    return RecordValuePlaceholderType.SCHEMALESS.type();
   }
 
   @Override

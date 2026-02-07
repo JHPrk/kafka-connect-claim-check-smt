@@ -17,7 +17,6 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,75 +25,42 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ClaimCheckSinkTransform 단위 테스트")
 class ClaimCheckSinkTransformTest {
 
   @InjectMocks private ClaimCheckSinkTransform transform;
   @Mock private S3Storage storage;
 
   @Nested
-  @DisplayName("configure 메서드 테스트")
   class ConfigureTest {
 
     @Test
-    @DisplayName("올바른 설정정보를 구성하면 정상적으로 구성된다.")
-    void rightConfig() {
+    void shouldConfigureWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          Map.of(
-              ClaimCheckSinkTransform.Config.STORAGE_TYPE,
-              ClaimCheckStorageType.S3.type(),
-              S3Storage.Config.BUCKET_NAME,
-              "test-bucket",
-              S3Storage.Config.REGION,
-              "ap-northeast-2",
-              S3Storage.Config.PATH_PREFIX,
-              "test/path",
-              S3Storage.Config.RETRY_MAX,
-              "3",
-              S3Storage.Config.RETRY_BACKOFF_MS,
-              "300",
-              S3Storage.Config.RETRY_MAX_BACKOFF_MS,
-              "20000");
+          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type());
 
       // When
       transform.configure(configs);
 
       // Then
-      assertThat(transform.getStorageType()).isEqualTo(ClaimCheckStorageType.S3.type());
+      assertThat(transform.getConfig().getStorageType()).isEqualTo(ClaimCheckStorageType.S3.type());
       assertThat(transform.getStorage()).isNotNull();
       assertThat(transform.getRecordSerializer()).isNotNull();
     }
   }
 
   @Nested
-  @DisplayName("apply 메서드 테스트")
   class ApplyTest {
 
     @BeforeEach
-    void beforeEach() {
+    void setUp() {
       Map<String, String> configs =
-          Map.of(
-              ClaimCheckSinkTransform.Config.STORAGE_TYPE,
-              ClaimCheckStorageType.S3.type(),
-              S3Storage.Config.BUCKET_NAME,
-              "test-bucket",
-              S3Storage.Config.REGION,
-              "ap-northeast-2",
-              S3Storage.Config.PATH_PREFIX,
-              "test/path",
-              S3Storage.Config.RETRY_MAX,
-              "3",
-              S3Storage.Config.RETRY_BACKOFF_MS,
-              "300",
-              S3Storage.Config.RETRY_MAX_BACKOFF_MS,
-              "20000");
+          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type());
       transform.configure(configs);
     }
 
     @Test
-    @DisplayName("헤더에 ClaimCheck 참조값이 포함되지 않은 Record를 인자로 넣으면 아무런 동작도 수행하지 않는다.")
-    void nonClaimCheckRecordDoesNothing() {
+    void shouldReturnUnchangedRecordWhenClaimCheckHeaderIsMissing() {
       // Given
       SinkRecord record =
           new SinkRecord("test-topic", 0, Schema.BYTES_SCHEMA, "key", null, null, 0);
@@ -108,8 +74,7 @@ class ClaimCheckSinkTransformTest {
     }
 
     @Test
-    @DisplayName("헤더에 ClaimCheck 참조값이 포함된 Schemaless SinkRecord를 인자로 넣으면 원본 Record로 대체된다.")
-    void schemalessSinkRecordReturnOriginalRecord() {
+    void shouldRestoreOriginalRecordFromSchemalessClaimCheck() {
       // Given
       String fetchedJson = "{\"id\":1,\"name\":\"cokelee777\"}";
       when(storage.retrieve(any())).thenReturn(fetchedJson.getBytes(StandardCharsets.UTF_8));
@@ -144,8 +109,7 @@ class ClaimCheckSinkTransformTest {
     }
 
     @Test
-    @DisplayName("헤더에 ClaimCheck 참조값이 포함된 Generic Schema SinkRecord를 인자로 넣으면 원본 Record로 대체된다.")
-    void genericSchemaSinkRecordReturnOriginalRecord() {
+    void shouldRestoreOriginalRecordFromGenericSchemaClaimCheck() {
       // Given
       String fetchedJson =
           "{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"int64\",\"field\":\"id\"},{\"type\":\"string\",\"field\":\"name\"}],\"optional\":false,\"name\":\"payload\"},\"payload\":{\"id\":1,\"name\":\"cokelee777\"}}";
@@ -186,8 +150,7 @@ class ClaimCheckSinkTransformTest {
     }
 
     @Test
-    @DisplayName("헤더에 ClaimCheck 참조값이 포함된 Debezium Schema SinkRecord를 인자로 넣으면 원본 Record로 대체된다.")
-    void debeziumSchemaSinkRecordReturnOriginalRecord() {
+    void shouldRestoreOriginalRecordFromDebeziumSchemaClaimCheck() {
       // Given
       String fetchedJson =
           "{\"schema\":{\"type\":\"struct\",\"fields\":[{\"type\":\"struct\",\"fields\":[{\"type\":\"int64\",\"field\":\"id\"},{\"type\":\"string\",\"field\":\"name\"}],\"optional\":true,\"name\":\"test.db.table.Value\",\"field\":\"before\"},{\"type\":\"struct\",\"fields\":[{\"type\":\"int64\",\"field\":\"id\"},{\"type\":\"string\",\"field\":\"name\"}],\"optional\":true,\"name\":\"test.db.table.Value\",\"field\":\"after\"},{\"type\":\"string\",\"field\":\"op\"},{\"type\":\"int64\",\"optional\":true,\"field\":\"ts_ms\"}],\"optional\":false,\"name\":\"io.debezium.connector.mysql.Envelope\"},\"payload\":{\"before\":{\"id\":1,\"name\":\"before cokelee777\"},\"after\":{\"id\":1,\"name\":\"after cokelee777\"},\"op\":\"c\",\"ts_ms\":1672531200000}}";
@@ -245,12 +208,10 @@ class ClaimCheckSinkTransformTest {
   }
 
   @Nested
-  @DisplayName("close 메서드 테스트")
   class CloseTest {
 
     @Test
-    @DisplayName("ClaimCheckStorage가 주입된 상태에서 close 호출 시 storage의 close가 호출된다.")
-    void shouldCloseInjectedClaimCheckStorage() {
+    void shouldCloseStorageWhenInjected() {
       // Given & When
       transform.close();
 
@@ -259,8 +220,7 @@ class ClaimCheckSinkTransformTest {
     }
 
     @Test
-    @DisplayName("ClaimCheckStorage가 null이어도 예외가 발생하지 않는다.")
-    void notCauseExceptionAndCloseWhenClaimCheckStorageIsNull() {
+    void shouldNotThrowExceptionWhenStorageIsNull() {
       // Given
       transform = new ClaimCheckSinkTransform();
 

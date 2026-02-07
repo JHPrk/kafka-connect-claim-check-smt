@@ -1,4 +1,4 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.filesystem;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.storage.client;
 
 import com.github.cokelee777.kafka.connect.smt.common.retry.RetryConfig;
 import java.io.FileNotFoundException;

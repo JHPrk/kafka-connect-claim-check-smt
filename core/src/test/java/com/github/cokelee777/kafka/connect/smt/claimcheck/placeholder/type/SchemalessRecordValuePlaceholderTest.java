@@ -1,31 +1,27 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
 import static org.assertj.core.api.Assertions.*;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("SchemalessPlaceholderStrategy 단위 테스트")
-class SchemalessPlaceholderStrategyTest {
+class SchemalessRecordValuePlaceholderTest {
 
-  private SchemalessPlaceholderStrategy schemalessPlaceholderStrategy;
+  private SchemalessRecordValuePlaceholder schemalessPlaceholderStrategy;
 
   @BeforeEach
-  void beforeEach() {
-    schemalessPlaceholderStrategy = new SchemalessPlaceholderStrategy();
+  void setUp() {
+    schemalessPlaceholderStrategy = new SchemalessRecordValuePlaceholder();
   }
 
   @Nested
-  @DisplayName("apply 메서드 테스트")
   class ApplyTest {
 
     @Test
-    @DisplayName("처리할 수 있는 Record를 인자로 넣으면 null이 반환된다.")
-    void rightArgsReturnNull() {
+    void shouldReturnNullForSchemalessRecord() {
       // Given
       String value = "payload";
       SourceRecord record =
@@ -39,8 +35,7 @@ class SchemalessPlaceholderStrategyTest {
     }
 
     @Test
-    @DisplayName("처리할 수 없는 Record를 인자로 넣으면 예외가 발생한다.")
-    void wrongArgsCauseException() {
+    void shouldThrowExceptionWhenRecordHasSchema() {
       // Given
       String value = "payload";
       SourceRecord record =

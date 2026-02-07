@@ -1,4 +1,4 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -8,27 +8,23 @@ import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("DebeziumStructPlaceholderStrategy 단위 테스트")
-class DebeziumStructPlaceholderStrategyTest {
+class DebeziumStructRecordValuePlaceholderTest {
 
-  private DebeziumStructPlaceholderStrategy debeziumStructPlaceholderStrategy;
+  private DebeziumStructRecordValuePlaceholder debeziumStructPlaceholderStrategy;
 
   @BeforeEach
-  void beforeEach() {
-    debeziumStructPlaceholderStrategy = new DebeziumStructPlaceholderStrategy();
+  void setUp() {
+    debeziumStructPlaceholderStrategy = new DebeziumStructRecordValuePlaceholder();
   }
 
   @Nested
-  @DisplayName("apply 메서드 테스트")
   class ApplyTest {
 
     @Test
-    @DisplayName("처리할 수 있는 Record를 인자로 넣으면 메타데이터를 제외한 데이터들이 기본값으로 세팅되어 반환된다.")
-    void rightArgsReturnDefaultValueAboutNormalFields() {
+    void shouldReturnDefaultValuesExceptMetadata() {
       // Given
       Schema nestedSchema =
           SchemaBuilder.struct()
@@ -71,8 +67,7 @@ class DebeziumStructPlaceholderStrategyTest {
     }
 
     @Test
-    @DisplayName("처리할 수 없는 Record를 인자로 넣으면 예외가 발생한다.")
-    void wrongArgsCauseException() {
+    void shouldThrowExceptionWhenRecordSchemaIsNotDebezium() {
       // Given
       Schema valueSchema =
           SchemaBuilder.struct()

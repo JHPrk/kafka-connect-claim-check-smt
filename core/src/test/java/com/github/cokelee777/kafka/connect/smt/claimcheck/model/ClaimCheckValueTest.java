@@ -2,30 +2,25 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.model;
 
 import static org.assertj.core.api.Assertions.*;
 
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-@DisplayName("ClaimCheckValue 단위 테스트")
 class ClaimCheckValueTest {
 
   @Nested
-  @DisplayName("create 메서드 테스트")
   class CreateTest {
 
     @Test
-    @DisplayName("올바른 인자를 넘기면 정상적으로 객체가 생성된다.")
-    void rightArgs() {
+    void shouldCreateClaimCheckValue() {
       // Given
       String referenceUrl = "s3://test-bucket/claim-checks";
       int originalSizeBytes = 1024 * 1024;
 
       // When
-      ClaimCheckValue claimCheckValue =
-          ClaimCheckValue.create(referenceUrl, originalSizeBytes);
+      ClaimCheckValue claimCheckValue = ClaimCheckValue.create(referenceUrl, originalSizeBytes);
 
       // Then
       assertThat(claimCheckValue).isNotNull();
@@ -36,8 +31,7 @@ class ClaimCheckValueTest {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {" "})
-    @DisplayName("null 또는 빈 값의 ReferenceUrl을 인자로 넘기면 예외가 발생한다.")
-    void nullOrBlankReferenceUrlCauseException(String referenceUrl) { // Given
+    void shouldThrowExceptionWhenReferenceUrlIsBlank(String referenceUrl) { // Given
       int originalSizeBytes = 1024 * 1024;
 
       // When & Then
@@ -48,8 +42,7 @@ class ClaimCheckValueTest {
 
     @ParameterizedTest
     @ValueSource(ints = {-1, -2, -3})
-    @DisplayName("originalSizeBytes를 0보다 낮게 설정하면 예외가 발생한다.")
-    void setOriginalSizeBytesZeroCauseException(int originalSizeBytes) { // Given
+    void shouldThrowExceptionWhenOriginalSizeBytesIsNegative(int originalSizeBytes) { // Given
       String referenceUrl = "s3://test-bucket/claim-checks";
 
       // When & Then
