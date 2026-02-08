@@ -26,9 +26,9 @@ class RetryConfigTest {
 
       // Then
       assertThat(retryConfig).isNotNull();
-      assertThat(retryConfig.maxAttempts()).isSameAs(maxAttempts);
-      assertThat(retryConfig.initialBackoff()).isSameAs(initialBackoff);
-      assertThat(retryConfig.maxBackoff()).isSameAs(maxBackoff);
+      assertThat(retryConfig.maxAttempts()).isEqualTo(maxAttempts);
+      assertThat(retryConfig.initialBackoff()).isEqualTo(initialBackoff);
+      assertThat(retryConfig.maxBackoff()).isEqualTo(maxBackoff);
     }
 
     @ParameterizedTest
