@@ -39,7 +39,6 @@ class S3StorageTest {
               .bucketName("test-bucket")
               .region(Region.AP_NORTHEAST_1.id())
               .pathPrefix("/test/path")
-              .endpointOverride(null)
               .retryMax(5)
               .retryBackoffMs(500L)
               .retryMaxBackoffMs(30000L)
