@@ -83,7 +83,7 @@ class ClaimCheckSourceTransformConfigTest {
           ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type(), 1024);
 
       // When & Then
-      ClaimCheckSinkTransformConfig.configDef().parse(validConfigs);
+      ClaimCheckSourceTransformConfig.configDef().parse(validConfigs);
     }
 
     @Test
@@ -93,7 +93,7 @@ class ClaimCheckSourceTransformConfigTest {
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
-          .isThrownBy(() -> ClaimCheckSinkTransformConfig.configDef().parse(invalidConfigs))
+          .isThrownBy(() -> ClaimCheckSourceTransformConfig.configDef().parse(invalidConfigs))
           .withMessageContaining("Invalid value INVALID for configuration " + STORAGE_TYPE_CONFIG);
     }
   }
