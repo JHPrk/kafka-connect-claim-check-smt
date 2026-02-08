@@ -1,6 +1,6 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.PlaceholderStrategyType;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.RecordValuePlaceholderType;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.kafka.connect.data.Field;
@@ -10,17 +10,24 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class DebeziumStructPlaceholderStrategy implements PlaceholderStrategy {
+/**
+ * {@link RecordValuePlaceholder} implementation for Debezium-specific {@link Struct} records.
+ *
+ * <p>This strategy identifies Debezium change event records (based on schema name or metadata fields)
+ * and generates a placeholder {@link Struct} where the actual data fields ("before", "after") are nulled out,
+ * while preserving metadata fields.
+ */
+public final class DebeziumStructRecordValuePlaceholder implements RecordValuePlaceholder {
 
   private static final Logger log =
-      LoggerFactory.getLogger(DebeziumStructPlaceholderStrategy.class);
+      LoggerFactory.getLogger(DebeziumStructRecordValuePlaceholder.class);
 
   private static final Set<String> DEBEZIUM_METADATA_FIELDS = Set.of("source", "op");
   private static final Set<String> DEBEZIUM_DATA_FIELDS = Set.of("before", "after");
 
   @Override
-  public String getStrategyType() {
-    return PlaceholderStrategyType.DEBEZIUM_STRUCT.type();
+  public String getPlaceholderType() {
+    return RecordValuePlaceholderType.DEBEZIUM_STRUCT.type();
   }
 
   @Override

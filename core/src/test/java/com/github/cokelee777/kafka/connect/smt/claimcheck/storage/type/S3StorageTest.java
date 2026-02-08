@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.storage.S3StorageConfig;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.S3StorageTestConfigProvider;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
 import org.apache.kafka.common.config.ConfigException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,78 +17,70 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("S3Storage 단위 테스트")
 class S3StorageTest {
 
   @InjectMocks private S3Storage s3Storage;
   @Mock private S3Client s3Client;
 
   @Nested
-  @DisplayName("configure 메서드 테스트")
   class ConfigureTest {
 
     @Test
-    @DisplayName("올바른 설정정보를 세팅하면 정상적으로 구성된다.")
-    void rightConfig() {
+    void shouldConfigureWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          Map.of(
-              S3Storage.Config.BUCKET_NAME,
-              "test-bucket",
-              S3Storage.Config.REGION,
-              "ap-northeast-2",
-              S3Storage.Config.PATH_PREFIX,
-              "test/path",
-              S3Storage.Config.RETRY_MAX,
-              "3",
-              S3Storage.Config.RETRY_BACKOFF_MS,
-              "300",
-              S3Storage.Config.RETRY_MAX_BACKOFF_MS,
-              "20000");
+          S3StorageTestConfigProvider.builder()
+              .bucketName("test-bucket")
+              .region(Region.AP_NORTHEAST_1.id())
+              .pathPrefix("/test/path")
+              .retryMax(5)
+              .retryBackoffMs(500L)
+              .retryMaxBackoffMs(30000L)
+              .build();
 
       // When
       s3Storage.configure(configs);
 
       // Then
-      assertThat(s3Storage.getBucketName()).isEqualTo("test-bucket");
-      assertThat(s3Storage.getPathPrefix()).isEqualTo("test/path");
+      assertThat(s3Storage.getConfig().getBucketName()).isEqualTo("test-bucket");
+      assertThat(s3Storage.getConfig().getRegion()).isEqualTo(Region.AP_NORTHEAST_1.id());
+      assertThat(s3Storage.getConfig().getPathPrefix()).isEqualTo("test/path");
+      assertThat(s3Storage.getConfig().getRetryMax()).isEqualTo(5);
+      assertThat(s3Storage.getConfig().getRetryBackoffMs()).isEqualTo(500L);
+      assertThat(s3Storage.getConfig().getRetryMaxBackoffMs()).isEqualTo(30000L);
     }
 
     @Test
-    @DisplayName("설정정보에 버킷명만 존재해도 정상적으로 구성된다.")
-    void onlyBucketNameConfig() {
+    void shouldUseDefaultValuesWhenOnlyBucketNameProvided() {
       // Given
-      Map<String, String> configs = Map.of(S3Storage.Config.BUCKET_NAME, "test-bucket");
+      Map<String, String> configs =
+          S3StorageTestConfigProvider.builder().bucketName("test-bucket").build();
 
       // When
       s3Storage.configure(configs);
 
       // Then
-      assertThat(s3Storage.getBucketName()).isEqualTo("test-bucket");
-      assertThat(s3Storage.getPathPrefix()).isEqualTo(S3Storage.Config.DEFAULT_PATH_PREFIX);
+      assertThat(s3Storage.getConfig().getBucketName()).isEqualTo("test-bucket");
+      assertThat(s3Storage.getConfig().getRegion()).isEqualTo(S3StorageConfig.REGION_DEFAULT);
+      assertThat(s3Storage.getConfig().getPathPrefix())
+          .isEqualTo(S3StorageConfig.PATH_PREFIX_DEFAULT);
+      assertThat(s3Storage.getConfig().getRetryMax()).isEqualTo(S3StorageConfig.RETRY_MAX_DEFAULT);
+      assertThat(s3Storage.getConfig().getRetryBackoffMs())
+          .isEqualTo(S3StorageConfig.RETRY_BACKOFF_MS_DEFAULT);
+      assertThat(s3Storage.getConfig().getRetryMaxBackoffMs())
+          .isEqualTo(S3StorageConfig.RETRY_MAX_BACKOFF_MS_DEFAULT);
     }
 
     @Test
-    @DisplayName("설정정보에 버킷명이 없으면 예외가 발생한다.")
-    void withoutBucketNameCauseException() {
+    void shouldThrowExceptionWhenBucketNameIsMissing() {
       // Given
-      Map<String, String> configs =
-          Map.of(
-              S3Storage.Config.REGION,
-              "ap-northeast-2",
-              S3Storage.Config.PATH_PREFIX,
-              "test/path",
-              S3Storage.Config.RETRY_MAX,
-              "3",
-              S3Storage.Config.RETRY_BACKOFF_MS,
-              "300",
-              S3Storage.Config.RETRY_MAX_BACKOFF_MS,
-              "20000");
+      Map<String, String> configs = S3StorageTestConfigProvider.builder().build();
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
@@ -99,18 +91,17 @@ class S3StorageTest {
   }
 
   @Nested
-  @DisplayName("store 메서드 테스트")
   class StoreTest {
 
     @BeforeEach
-    void beforeEach() {
-      Map<String, String> configs = Map.of(S3Storage.Config.BUCKET_NAME, "test-bucket");
+    void setUp() {
+      Map<String, String> configs =
+          S3StorageTestConfigProvider.builder().bucketName("test-bucket").build();
       s3Storage.configure(configs);
     }
 
     @Test
-    @DisplayName("올바른 payload를 인자로 넘기면 정상적으로 S3에 저장된다.")
-    void rightPayloadCauseS3Store() {
+    void shouldStorePayloadAndReturnS3ReferenceUrl() {
       // Given
       byte[] payload = "payload".getBytes(StandardCharsets.UTF_8);
 
@@ -124,8 +115,7 @@ class S3StorageTest {
     }
 
     @Test
-    @DisplayName("S3에 payload를 업로드 중에 예외가 발생하면 RuntimeException이 발생한다.")
-    void s3UploadExceptionCauseRuntimeException() {
+    void shouldThrowRuntimeExceptionWhenS3UploadFails() {
       // Given
       byte[] payload = "payload".getBytes(StandardCharsets.UTF_8);
       when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
@@ -139,12 +129,10 @@ class S3StorageTest {
   }
 
   @Nested
-  @DisplayName("close 메서드 테스트")
   class CloseTest {
 
     @Test
-    @DisplayName("S3Client가 주입된 상태에서 close 호출 시 client의 close가 호출된다.")
-    void shouldCloseInjectedClient() {
+    void shouldCloseS3Client() {
       // Given & When
       s3Storage.close();
 
@@ -153,8 +141,7 @@ class S3StorageTest {
     }
 
     @Test
-    @DisplayName("S3Client가 null이어도 예외가 발생하지 않는다.")
-    void notCauseExceptionAndCloseWhenS3ClientIsNull() {
+    void shouldNotThrowExceptionWhenS3ClientIsNull() {
       // Given
       s3Storage = new S3Storage();
 

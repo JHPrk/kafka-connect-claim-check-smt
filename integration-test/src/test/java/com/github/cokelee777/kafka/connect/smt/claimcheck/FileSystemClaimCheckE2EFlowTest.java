@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.ClaimCheckSinkTransformConfig;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.ClaimCheckSourceTransformConfig;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.config.storage.FileSystemStorageConfig;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckSchema;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.model.ClaimCheckValue;
 import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.ClaimCheckStorageType;
-import com.github.cokelee777.kafka.connect.smt.claimcheck.storage.type.FileSystemStorage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +27,6 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.*;
 import org.mockito.MockedStatic;
 
-@DisplayName("FileSystem Claim Check SMT E2E 통합 테스트")
 class FileSystemClaimCheckE2EFlowTest {
 
   private static final String TOPIC_NAME = "test-topic";
@@ -59,70 +60,68 @@ class FileSystemClaimCheckE2EFlowTest {
   }
 
   @BeforeEach
-  void beforeEach() {
+  void setUp() {
     sourceTransform = new ClaimCheckSourceTransform();
     sinkTransform = new ClaimCheckSinkTransform();
   }
 
   @AfterEach
-  void afterEach() {
+  void tearDown() {
     sinkTransform.close();
     sourceTransform.close();
   }
 
   @Nested
-  @DisplayName("정상 Flow 통합 테스트")
   class NormalFlowIntegrationTest {
 
     @Test
-    @DisplayName("Sink -> Source 전체 흐름에서 메시지가 정상적으로 변환되고 원복되어야 한다.")
     void shouldPerformClaimCheckE2EFlow() throws IOException {
-      /** Given: Common */
+      // Given: Common
       // Common config
       Map<String, Object> commonConfig = new HashMap<>();
-      commonConfig.put(FileSystemStorage.Config.PATH, tempDirPath.toString());
+      commonConfig.put(FileSystemStorageConfig.PATH_CONFIG, tempDirPath.toString());
 
-      /** Given: Source */
+      // Given: Source
       // ClaimCheckSourceTransform config
       Map<String, Object> sourceTransformConfig = new HashMap<>(commonConfig);
-      sourceTransformConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1);
+      sourceTransformConfig.put(ClaimCheckSourceTransformConfig.THRESHOLD_BYTES_CONFIG, 1);
       sourceTransformConfig.put(
-          ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.FILESYSTEM.type());
+          ClaimCheckSourceTransformConfig.STORAGE_TYPE_CONFIG,
+          ClaimCheckStorageType.FILESYSTEM.type());
       sourceTransform.configure(sourceTransformConfig);
 
       SourceRecord initialSourceRecord = generateSourceRecord();
 
-      /** When: Source */
+      // When: Source
       SourceRecord transformedSourceRecord = sourceTransform.apply(initialSourceRecord);
 
-      /** Then: Source */
+      // Then: Source
       Header transformedSourceHeader =
           validateTransformedSourceRecord(transformedSourceRecord, initialSourceRecord);
 
-      /** Given: Sink */
+      // Given: Sink
       // ClaimCheckSinkTransform config
       Map<String, Object> sinkTransformConfig = new HashMap<>(commonConfig);
       sinkTransformConfig.put(
-          ClaimCheckSinkTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.FILESYSTEM.type());
+          ClaimCheckSinkTransformConfig.STORAGE_TYPE_CONFIG,
+          ClaimCheckStorageType.FILESYSTEM.type());
       sinkTransform.configure(sinkTransformConfig);
 
       SinkRecord initialSinkRecord =
           generateSinkRecord(transformedSourceRecord, transformedSourceHeader);
 
-      /** When: Sink */
+      // When: Sink
       SinkRecord restoredSinkRecord = sinkTransform.apply(initialSinkRecord);
 
-      /** Then: Sink */
+      // Then: Sink
       validateRestoredSinkRecord(restoredSinkRecord, initialSourceRecord);
     }
   }
 
   @Nested
-  @DisplayName("FileSystem SourceTransform 재시도 통합 테스트")
   class FileSystemSourceRetryIntegrationTest {
 
     @Test
-    @DisplayName("일시적인 I/O 오류 발생 시 재시도하여 성공해야 한다")
     void shouldRetryAndSucceedOnTransientFailure() {
       // Given
       Map<String, Object> sourceTransformConfig = generateSourceConfigWithRetry(3);
@@ -131,7 +130,7 @@ class FileSystemClaimCheckE2EFlowTest {
 
       AtomicInteger writeAttemptCount = new AtomicInteger(0);
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 첫 번째 시도는 실패, 두 번째 시도는 성공하도록 설정
+        // First attempt fails, second attempt succeeds
         mockedFiles
             .when(() -> Files.write(any(Path.class), any(byte[].class)))
             .thenAnswer(
@@ -153,7 +152,6 @@ class FileSystemClaimCheckE2EFlowTest {
     }
 
     @Test
-    @DisplayName("최대 재시도 횟수를 초과하면 예외가 발생해야 한다")
     void shouldFailWhenMaxRetriesExceeded() {
       // Given
       Map<String, Object> sourceTransformConfig = generateSourceConfigWithRetry(2);
@@ -161,7 +159,7 @@ class FileSystemClaimCheckE2EFlowTest {
       SourceRecord initialSourceRecord = generateSourceRecord();
 
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 모든 시도가 실패하도록 설정
+        // All attempts fail
         mockedFiles
             .when(() -> Files.write(any(Path.class), any(byte[].class)))
             .thenThrow(new IOException("Persistent I/O error"));
@@ -173,7 +171,6 @@ class FileSystemClaimCheckE2EFlowTest {
     }
 
     @Test
-    @DisplayName("재시도 설정이 0일 때 즉시 실패해야 한다")
     void shouldFailImmediatelyWhenRetryDisabled() {
       // Given
       Map<String, Object> sourceTransformConfig = generateSourceConfigWithRetry(0);
@@ -182,7 +179,7 @@ class FileSystemClaimCheckE2EFlowTest {
 
       AtomicInteger writeAttemptCount = new AtomicInteger(0);
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 모든 시도가 실패하도록 설정
+        // All attempts fail
         mockedFiles
             .when(() -> Files.write(any(Path.class), any(byte[].class)))
             .thenAnswer(
@@ -194,19 +191,17 @@ class FileSystemClaimCheckE2EFlowTest {
         // When & Then
         assertThatThrownBy(() -> sourceTransform.apply(initialSourceRecord))
             .isInstanceOf(RuntimeException.class);
-        // 재시도 없이 1번만 시도해야 함
+        // Should attempt only once without retry
         assertThat(writeAttemptCount.get()).isEqualTo(1);
       }
     }
   }
 
   @Nested
-  @DisplayName("FileSystem SinkTransform 재시도 통합 테스트")
   class FileSystemSinkRetryIntegrationTest {
 
     @Test
-    @DisplayName("일시적인 I/O 오류 발생 시 재시도하여 성공해야 한다")
-    void shouldRetryAndSucceedOnTransientFailure() throws IOException {
+    void shouldRetryAndSucceedOnTransientFailure() {
       // Given
       Map<String, Object> sinkTransformConfig = generateSinkConfigWithRetry(3);
       sinkTransform.configure(sinkTransformConfig);
@@ -214,7 +209,7 @@ class FileSystemClaimCheckE2EFlowTest {
 
       AtomicInteger readAttemptCount = new AtomicInteger(0);
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 첫 번째 시도는 실패, 두 번째 시도는 성공하도록 설정
+        // First attempt fails, second attempt succeeds
         mockedFiles
             .when(() -> Files.readAllBytes(any(Path.class)))
             .thenAnswer(
@@ -236,15 +231,14 @@ class FileSystemClaimCheckE2EFlowTest {
     }
 
     @Test
-    @DisplayName("최대 재시도 횟수를 초과하면 예외가 발생해야 한다")
-    void shouldFailWhenMaxRetriesExceeded() throws IOException {
+    void shouldFailWhenMaxRetriesExceeded() {
       // Given
       Map<String, Object> sinkTransformConfig = generateSinkConfigWithRetry(2);
       sinkTransform.configure(sinkTransformConfig);
       SinkRecord initialSinkRecord = storeDataAndCreateSinkRecord();
 
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 모든 시도가 실패하도록 설정
+        // All attempts fail
         mockedFiles
             .when(() -> Files.readAllBytes(any(Path.class)))
             .thenThrow(new IOException("Persistent I/O error"));
@@ -257,8 +251,7 @@ class FileSystemClaimCheckE2EFlowTest {
     }
 
     @Test
-    @DisplayName("재시도 설정이 0일 때 즉시 실패해야 한다")
-    void shouldFailImmediatelyWhenRetryDisabled() throws IOException {
+    void shouldFailImmediatelyWhenRetryDisabled() {
       // Given
       Map<String, Object> sinkTransformConfig = generateSinkConfigWithRetry(0);
       sinkTransform.configure(sinkTransformConfig);
@@ -266,7 +259,7 @@ class FileSystemClaimCheckE2EFlowTest {
 
       AtomicInteger readAttemptCount = new AtomicInteger(0);
       try (MockedStatic<Files> mockedFiles = mockStatic(Files.class, CALLS_REAL_METHODS)) {
-        // 모든 시도가 실패하도록 설정
+        // All attempts fail
         mockedFiles
             .when(() -> Files.readAllBytes(any(Path.class)))
             .thenAnswer(
@@ -279,7 +272,7 @@ class FileSystemClaimCheckE2EFlowTest {
         assertThatExceptionOfType(RuntimeException.class)
             .isThrownBy(() -> sinkTransform.apply(initialSinkRecord))
             .withMessageStartingWith("Failed to read claim check file:");
-        // 재시도 없이 1번만 시도해야 함
+        // Should attempt only once without retry
         assertThat(readAttemptCount.get()).isEqualTo(1);
       }
     }
@@ -287,9 +280,10 @@ class FileSystemClaimCheckE2EFlowTest {
     private SinkRecord storeDataAndCreateSinkRecord() {
       Map<String, Object> sourceConfig = new HashMap<>();
       sourceConfig.put(
-          ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.FILESYSTEM.type());
-      sourceConfig.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1);
-      sourceConfig.put(FileSystemStorage.Config.PATH, tempDirPath.toString());
+          ClaimCheckSourceTransformConfig.STORAGE_TYPE_CONFIG,
+          ClaimCheckStorageType.FILESYSTEM.type());
+      sourceConfig.put(ClaimCheckSourceTransformConfig.THRESHOLD_BYTES_CONFIG, 1);
+      sourceConfig.put(FileSystemStorageConfig.PATH_CONFIG, tempDirPath.toString());
       sourceTransform.configure(sourceConfig);
 
       SourceRecord initialSourceRecord = generateSourceRecord();
@@ -305,23 +299,24 @@ class FileSystemClaimCheckE2EFlowTest {
   private Map<String, Object> generateSourceConfigWithRetry(int retryMax) {
     Map<String, Object> config = new HashMap<>();
     config.put(
-        ClaimCheckSourceTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.FILESYSTEM.type());
-    config.put(ClaimCheckSourceTransform.Config.THRESHOLD_BYTES, 1);
-    config.put(FileSystemStorage.Config.PATH, tempDirPath.toString());
-    config.put(FileSystemStorage.Config.RETRY_MAX, retryMax);
-    config.put(FileSystemStorage.Config.RETRY_BACKOFF_MS, 50L);
-    config.put(FileSystemStorage.Config.RETRY_MAX_BACKOFF_MS, 100L);
+        ClaimCheckSourceTransformConfig.STORAGE_TYPE_CONFIG,
+        ClaimCheckStorageType.FILESYSTEM.type());
+    config.put(ClaimCheckSourceTransformConfig.THRESHOLD_BYTES_CONFIG, 1);
+    config.put(FileSystemStorageConfig.PATH_CONFIG, tempDirPath.toString());
+    config.put(FileSystemStorageConfig.RETRY_MAX_CONFIG, retryMax);
+    config.put(FileSystemStorageConfig.RETRY_BACKOFF_MS_CONFIG, 50L);
+    config.put(FileSystemStorageConfig.RETRY_MAX_BACKOFF_MS_CONFIG, 100L);
     return config;
   }
 
   private Map<String, Object> generateSinkConfigWithRetry(int retryMax) {
     Map<String, Object> config = new HashMap<>();
     config.put(
-        ClaimCheckSinkTransform.Config.STORAGE_TYPE, ClaimCheckStorageType.FILESYSTEM.type());
-    config.put(FileSystemStorage.Config.PATH, tempDirPath.toString());
-    config.put(FileSystemStorage.Config.RETRY_MAX, retryMax);
-    config.put(FileSystemStorage.Config.RETRY_BACKOFF_MS, 50L);
-    config.put(FileSystemStorage.Config.RETRY_MAX_BACKOFF_MS, 100L);
+        ClaimCheckSinkTransformConfig.STORAGE_TYPE_CONFIG, ClaimCheckStorageType.FILESYSTEM.type());
+    config.put(FileSystemStorageConfig.PATH_CONFIG, tempDirPath.toString());
+    config.put(FileSystemStorageConfig.RETRY_MAX_CONFIG, retryMax);
+    config.put(FileSystemStorageConfig.RETRY_BACKOFF_MS_CONFIG, 50L);
+    config.put(FileSystemStorageConfig.RETRY_MAX_BACKOFF_MS_CONFIG, 100L);
     return config;
   }
 
@@ -352,7 +347,7 @@ class FileSystemClaimCheckE2EFlowTest {
 
   private Header validateTransformedSourceRecord(
       SourceRecord transformedSourceRecord, SourceRecord initialSourceRecord) throws IOException {
-    // ClaimCheckSourceRecord 검증
+    // Validate ClaimCheckSourceRecord
     assertThat(transformedSourceRecord).isNotNull();
     assertThat(transformedSourceRecord.topic()).isEqualTo(TOPIC_NAME);
     assertThat(transformedSourceRecord.keySchema()).isNull();
@@ -362,11 +357,11 @@ class FileSystemClaimCheckE2EFlowTest {
     assertThat(transformedSourceRecord.value()).isInstanceOf(Struct.class);
     assertThat(transformedSourceRecord.value()).isNotEqualTo(initialSourceRecord.value());
 
-    // GenericStructStrategy 적용되어 모든 필드가 기본값으로 설정됨
+    // GenericStructStrategy applied, all fields set to default values
     assertThat(((Struct) transformedSourceRecord.value()).getInt64("id")).isEqualTo(0L);
     assertThat(((Struct) transformedSourceRecord.value()).getString("name")).isEqualTo("");
 
-    // ClaimCheckSourceHeader 검증
+    // Validate ClaimCheckSourceHeader
     Header transformedSourceHeader =
         transformedSourceRecord.headers().lastWithName(ClaimCheckSchema.NAME);
     assertThat(transformedSourceHeader).isNotNull();
@@ -374,7 +369,7 @@ class FileSystemClaimCheckE2EFlowTest {
     assertThat(transformedSourceHeader.schema()).isEqualTo(ClaimCheckSchema.SCHEMA);
     assertThat(transformedSourceHeader.value()).isInstanceOf(Struct.class);
 
-    // 실제 데이터 검증
+    // Validate actual data
     ClaimCheckValue claimCheckValue = ClaimCheckValue.from(transformedSourceHeader.value());
     String referenceUrl = claimCheckValue.referenceUrl();
     int originalSizeBytes = claimCheckValue.originalSizeBytes();
@@ -382,7 +377,7 @@ class FileSystemClaimCheckE2EFlowTest {
     assertThat(referenceUrl).startsWith("file://" + tempDirPath.toRealPath() + "/");
     assertThat(originalSizeBytes).isGreaterThan(0);
 
-    // 파일 시스템에 실제 데이터가 저장되었는지 확인
+    // Verify that actual data is stored in file system
     Path filePath = Path.of(referenceUrl.replace("file://", ""));
     assertThat(Files.exists(filePath)).isTrue();
     assertThat(Files.readAllBytes(filePath)).isNotEmpty();
@@ -401,13 +396,13 @@ class FileSystemClaimCheckE2EFlowTest {
     assertThat(restoredSinkRecord.value()).isNotNull();
     assertThat(restoredSinkRecord.value()).isInstanceOf(Struct.class);
 
-    // 복원된 값이 원본과 동일한지 검증
+    // Verify that restored value equals original
     Struct restoredValue = (Struct) restoredSinkRecord.value();
     assertThat(restoredValue.getInt64("id")).isEqualTo(1L);
     assertThat(restoredValue.getString("name")).isEqualTo("cokelee777");
     assertThat(restoredValue).isEqualTo(initialSourceRecord.value());
 
-    // ClaimCheck 헤더가 제거되었는지 확인
+    // Verify that ClaimCheck header is removed
     Header claimCheckSinkHeader = restoredSinkRecord.headers().lastWithName(ClaimCheckSchema.NAME);
     assertThat(claimCheckSinkHeader).isNull();
   }

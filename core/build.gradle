@@ -16,7 +16,7 @@ dependencies {
     // AWS SDK
     implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
     implementation "software.amazon.awssdk:s3"
-    implementation "software.amazon.awssdk:url-connection-client"
+    implementation "software.amazon.awssdk:apache-client"
 
     // Kafka Connect(Test)
     testImplementation "org.apache.kafka:connect-api:${kafkaVersion}"
@@ -68,7 +68,7 @@ shadowJar {
         exclude(dependency("org.slf4j:.*"))
     }
 
-    // 충돌 방지를 위한 패키지 재배치 (Relocation)
+    // Relocation packages from conflict
     relocate 'software.amazon.awssdk', 'com.github.cokelee777.shadow.awssdk'
     mergeServiceFiles()
 }
@@ -109,7 +109,7 @@ publishing {
         }
     }
 
-    // 배포할 저장소 위치 (GitHub Packages)
+    // GitHub Packages
     repositories {
         maven {
             name = "GitHubPackages"

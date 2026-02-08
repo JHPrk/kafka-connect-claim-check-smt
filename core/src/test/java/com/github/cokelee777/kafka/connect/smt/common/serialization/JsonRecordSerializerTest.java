@@ -5,23 +5,19 @@ import static org.assertj.core.api.Assertions.*;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("JsonRecordSerializer 단위 테스트")
 class JsonRecordSerializerTest {
 
   @Nested
-  @DisplayName("create 메서드 테스트")
   class CreateTest {
 
     @Test
-    @DisplayName("Schema와 Schemaless Serializer가 모두 구성된다.")
-    void schemaAndSchemalessSerializerConfig() {
+    void shouldCreateWithSchemaAndSchemalessConverters() {
       // Given & When
       JsonRecordSerializer jsonRecordSerializer = JsonRecordSerializer.create();
 
@@ -33,14 +29,17 @@ class JsonRecordSerializerTest {
   }
 
   @Nested
-  @DisplayName("serialize 메서드 테스트")
   class SerializeTest {
 
-    private final JsonRecordSerializer jsonRecordSerializer = JsonRecordSerializer.create();
+    private JsonRecordSerializer jsonRecordSerializer;
+
+    @BeforeEach
+    void setUp() {
+      jsonRecordSerializer = JsonRecordSerializer.create();
+    }
 
     @Test
-    @DisplayName("Schema가 존재하는 Record는 정상적으로 직렬화된다.")
-    void schemaRecordSerializer() {
+    void shouldSerializeRecordWithSchema() {
       // Given
       SourceRecord record =
           new SourceRecord(null, null, "test-bucket", Schema.STRING_SCHEMA, "payload");
@@ -56,8 +55,7 @@ class JsonRecordSerializerTest {
     }
 
     @Test
-    @DisplayName("Schema가 존재하지 않는 byte[] Record도 정상적으로 직렬화된다.")
-    void schemalessBytesRecordSerializer() {
+    void shouldSerializeSchemalessRecordWithBytes() {
       // Given
       SourceRecord record =
           new SourceRecord(
@@ -72,8 +70,7 @@ class JsonRecordSerializerTest {
     }
 
     @Test
-    @DisplayName("Schema가 존재하지 않는 String Record도 정상적으로 직렬화된다.")
-    void schemalessStringRecordSerializer() {
+    void shouldSerializeSchemalessRecordWithString() {
       // Given
       SourceRecord record = new SourceRecord(null, null, "test-bucket", null, "payload");
       byte[] expectedPayload = "payload".getBytes(StandardCharsets.UTF_8);
@@ -86,8 +83,7 @@ class JsonRecordSerializerTest {
     }
 
     @Test
-    @DisplayName("Schema가 존재하지 않는 Map Record도 정상적으로 직렬화된다.")
-    void schemalessMapRecordSerializer() {
+    void shouldSerializeSchemalessRecordWithMap() {
       // Given
       Map<String, Object> payload = new LinkedHashMap<>();
       payload.put("id", 1);
@@ -104,8 +100,7 @@ class JsonRecordSerializerTest {
     }
 
     @Test
-    @DisplayName("값이 null인 Record는 null이 반환된다.")
-    void nullRecordReturnNull() {
+    void shouldReturnNullWhenRecordValueIsNull() {
       // Given
       SourceRecord record = new SourceRecord(null, null, "test-bucket", null, null);
 

@@ -1,46 +1,41 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
 import static org.assertj.core.api.Assertions.*;
 
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("SchemalessPlaceholderStrategy 단위 테스트")
-class SchemalessPlaceholderStrategyTest {
+class SchemalessRecordValuePlaceholderTest {
 
-  private SchemalessPlaceholderStrategy schemalessPlaceholderStrategy;
+  private SchemalessRecordValuePlaceholder placeholder;
 
   @BeforeEach
-  void beforeEach() {
-    schemalessPlaceholderStrategy = new SchemalessPlaceholderStrategy();
+  void setUp() {
+    placeholder = new SchemalessRecordValuePlaceholder();
   }
 
   @Nested
-  @DisplayName("apply 메서드 테스트")
   class ApplyTest {
 
     @Test
-    @DisplayName("처리할 수 있는 Record를 인자로 넣으면 null이 반환된다.")
-    void rightArgsReturnNull() {
+    void shouldReturnNullForSchemalessRecord() {
       // Given
       String value = "payload";
       SourceRecord record =
           new SourceRecord(null, null, "test-topic", Schema.BYTES_SCHEMA, "key", null, value);
 
       // When
-      Object defaultValue = schemalessPlaceholderStrategy.apply(record);
+      Object defaultValue = placeholder.apply(record);
 
       // Then
       assertThat(defaultValue).isNull();
     }
 
     @Test
-    @DisplayName("처리할 수 없는 Record를 인자로 넣으면 예외가 발생한다.")
-    void wrongArgsCauseException() {
+    void shouldThrowExceptionWhenRecordHasSchema() {
       // Given
       String value = "payload";
       SourceRecord record =
@@ -49,7 +44,7 @@ class SchemalessPlaceholderStrategyTest {
 
       // When & Then
       assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(() -> schemalessPlaceholderStrategy.apply(record))
+          .isThrownBy(() -> placeholder.apply(record))
           .withMessage("Cannot handle record with non-null schema. Expected schemaless record.");
     }
   }

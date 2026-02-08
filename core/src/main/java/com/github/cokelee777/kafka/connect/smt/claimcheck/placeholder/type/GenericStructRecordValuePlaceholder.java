@@ -1,6 +1,6 @@
-package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies;
+package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type;
 
-import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.PlaceholderStrategyType;
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.RecordValuePlaceholderType;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import org.apache.kafka.connect.data.Field;
@@ -10,13 +10,22 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GenericStructPlaceholderStrategy implements PlaceholderStrategy {
+/**
+ * {@link RecordValuePlaceholder} implementation for generic {@link Struct} records.
+ *
+ * <p>This strategy generates a placeholder {@link Struct} by replacing all fields
+ * with their default values (if defined in the schema), or a sensible default for the field type.
+ * For complex types (Struct, Array, Map), it recursively applies default values.
+ * This is used for {@link Struct} records that are not specifically identified as Debezium records.
+ */
+public final class GenericStructRecordValuePlaceholder implements RecordValuePlaceholder {
 
-  private static final Logger log = LoggerFactory.getLogger(GenericStructPlaceholderStrategy.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(GenericStructRecordValuePlaceholder.class);
 
   @Override
-  public String getStrategyType() {
-    return PlaceholderStrategyType.GENERIC_STRUCT.type();
+  public String getPlaceholderType() {
+    return RecordValuePlaceholderType.GENERIC_STRUCT.type();
   }
 
   @Override
@@ -76,28 +85,18 @@ public final class GenericStructPlaceholderStrategy implements PlaceholderStrate
       return null;
     }
 
-    switch (schema.type()) {
-      case STRING:
-        return "";
-      case INT8:
-        return (byte) 0;
-      case INT16:
-        return (short) 0;
-      case INT32:
-        return 0;
-      case INT64:
-        return 0L;
-      case FLOAT32:
-        return 0.0f;
-      case FLOAT64:
-        return 0.0;
-      case BOOLEAN:
-        return false;
-      case BYTES:
-        return ByteBuffer.wrap(new byte[0]);
-      default:
-        return null;
-    }
+    return switch (schema.type()) {
+      case STRING -> "";
+      case INT8 -> (byte) 0;
+      case INT16 -> (short) 0;
+      case INT32 -> 0;
+      case INT64 -> 0L;
+      case FLOAT32 -> 0.0f;
+      case FLOAT64 -> 0.0;
+      case BOOLEAN -> false;
+      case BYTES -> ByteBuffer.wrap(new byte[0]);
+      default -> null;
+    };
   }
 
   private boolean isComplexType(Schema schema) {
@@ -106,16 +105,12 @@ public final class GenericStructPlaceholderStrategy implements PlaceholderStrate
   }
 
   private Object createDefaultForComplexType(Schema schema) {
-    switch (schema.type()) {
-      case STRUCT:
-        return createNestedDefaultStruct(schema);
-      case ARRAY:
-        return Collections.emptyList();
-      case MAP:
-        return Collections.emptyMap();
-      default:
-        throw new IllegalArgumentException("Not a complex type: " + schema.type());
-    }
+    return switch (schema.type()) {
+      case STRUCT -> createNestedDefaultStruct(schema);
+      case ARRAY -> Collections.emptyList();
+      case MAP -> Collections.emptyMap();
+      default -> throw new IllegalArgumentException("Not a complex type: " + schema.type());
+    };
   }
 
   private Struct createNestedDefaultStruct(Schema schema) {

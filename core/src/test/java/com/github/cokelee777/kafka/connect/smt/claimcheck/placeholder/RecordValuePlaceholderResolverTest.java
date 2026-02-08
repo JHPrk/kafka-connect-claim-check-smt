@@ -2,28 +2,23 @@ package com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.type.RecordValuePlaceholder;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.github.cokelee777.kafka.connect.smt.claimcheck.placeholder.strategies.PlaceholderStrategy;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.source.SourceRecord;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-@DisplayName("PlaceholderStrategyResolver 단위 테스트")
-class PlaceholderStrategyResolverTest {
+class RecordValuePlaceholderResolverTest {
 
   @Nested
-  @DisplayName("resolve 메서드 테스트")
   class ResolveTest {
 
     @Test
-    @DisplayName("Debezium Schema SourceRecord를 인자로 넣으면 DebeziumStructPlaceholderStrategy가 반환된다")
-    void debeziumSchemaReturnsDebeziumStrategy() {
+    void shouldReturnDebeziumStrategyWhenRecordHasDebeziumSchema() {
       // Given
       Schema rowSchema =
           SchemaBuilder.struct()
@@ -54,17 +49,16 @@ class PlaceholderStrategyResolverTest {
               null, null, "test-topic", Schema.BYTES_SCHEMA, "key", valueSchema, envelope);
 
       // When
-      PlaceholderStrategy strategy = PlaceholderStrategyResolver.resolve(record);
+      RecordValuePlaceholder strategy = RecordValuePlaceholderResolver.resolve(record);
 
       // Then
       assertThat(strategy).isNotNull();
-      assertThat(strategy.getStrategyType())
-          .isEqualTo(PlaceholderStrategyType.DEBEZIUM_STRUCT.type());
+      assertThat(strategy.getPlaceholderType())
+          .isEqualTo(RecordValuePlaceholderType.DEBEZIUM_STRUCT.type());
     }
 
     @Test
-    @DisplayName("Generic Schema SourceRecord를 인자로 넣으면 GenericStructPlaceholderStrategy가 반환된다")
-    void genericSchemaReturnsGenericStrategy() {
+    void shouldReturnGenericStrategyWhenRecordHasGenericSchema() {
       // Given
       Schema valueSchema =
           SchemaBuilder.struct()
@@ -78,17 +72,16 @@ class PlaceholderStrategyResolverTest {
               null, null, "test-topic", Schema.BYTES_SCHEMA, "key", valueSchema, value);
 
       // When
-      PlaceholderStrategy strategy = PlaceholderStrategyResolver.resolve(record);
+      RecordValuePlaceholder strategy = RecordValuePlaceholderResolver.resolve(record);
 
       // Then
       assertThat(strategy).isNotNull();
-      assertThat(strategy.getStrategyType())
-          .isEqualTo(PlaceholderStrategyType.GENERIC_STRUCT.type());
+      assertThat(strategy.getPlaceholderType())
+          .isEqualTo(RecordValuePlaceholderType.GENERIC_STRUCT.type());
     }
 
     @Test
-    @DisplayName("Schemaless SourceRecord를 인자로 넣으면 SchemalessPlaceholderStrategy가 반환된다")
-    void schemalessReturnsSchemalessStrategy() {
+    void shouldReturnSchemalessStrategyWhenRecordIsSchemaless() {
       // Given
       Map<String, Object> value = new HashMap<>();
       value.put("id", 1L);
@@ -97,16 +90,16 @@ class PlaceholderStrategyResolverTest {
           new SourceRecord(null, null, "test-topic", Schema.BYTES_SCHEMA, "key", null, value);
 
       // When
-      PlaceholderStrategy strategy = PlaceholderStrategyResolver.resolve(record);
+      RecordValuePlaceholder strategy = RecordValuePlaceholderResolver.resolve(record);
 
       // Then
       assertThat(strategy).isNotNull();
-      assertThat(strategy.getStrategyType()).isEqualTo(PlaceholderStrategyType.SCHEMALESS.type());
+      assertThat(strategy.getPlaceholderType())
+          .isEqualTo(RecordValuePlaceholderType.SCHEMALESS.type());
     }
 
     @Test
-    @DisplayName("지원하지 않는 Schema SourceRecord를 인자로 넣으면 IllegalStateException이 발생한다")
-    void unsupportedSchemaThrowsIllegalStateException() {
+    void shouldThrowExceptionWhenSchemaIsUnsupported() {
       // Given
       Schema valueSchema = Schema.STRING_SCHEMA;
       String value = "{\"id\":1,\"name\":\"cokelee777\"}";
@@ -116,16 +109,19 @@ class PlaceholderStrategyResolverTest {
 
       // When & Then
       assertThatExceptionOfType(IllegalStateException.class)
-          .isThrownBy(() -> PlaceholderStrategyResolver.resolve(record))
+          .isThrownBy(() -> RecordValuePlaceholderResolver.resolve(record))
           .withMessage("No strategy found for schema: " + valueSchema);
     }
 
     @Test
-    @DisplayName("null SourceRecord를 인자로 넣으면 IllegalArgumentException이 발생한다")
-    void nullRecordThrowsIllegalArgumentException() {
+    @SuppressWarnings("DataFlowIssue")
+    void shouldThrowExceptionWhenRecordIsNull() {
+      // Given
+      SourceRecord nullRecord = null;
+
       // When & Then
       assertThatExceptionOfType(IllegalArgumentException.class)
-          .isThrownBy(() -> PlaceholderStrategyResolver.resolve(null))
+          .isThrownBy(() -> RecordValuePlaceholderResolver.resolve(nullRecord))
           .withMessage("Source record cannot be null");
     }
   }
