@@ -39,7 +39,12 @@ class FileSystemStorageConfigTest {
       // Given
       String path = tempDir.toString();
       Map<String, String> configs =
-          FileSystemStorageTestConfigProvider.config(path, 5, 500L, 30000L);
+          FileSystemStorageTestConfigProvider.builder()
+              .path(path)
+              .retryMax(5)
+              .retryBackoffMs(500L)
+              .retryMaxBackoffMs(30000L)
+              .build();
 
       // When
       FileSystemStorageConfig config = new FileSystemStorageConfig(configs);
@@ -57,7 +62,7 @@ class FileSystemStorageConfigTest {
     @Test
     void shouldUseDefaultValuesWhenNoArgumentsProvided() throws IOException {
       // Given
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config();
+      Map<String, String> configs = FileSystemStorageTestConfigProvider.builder().build();
 
       // When
       FileSystemStorageConfig config = new FileSystemStorageConfig(configs);

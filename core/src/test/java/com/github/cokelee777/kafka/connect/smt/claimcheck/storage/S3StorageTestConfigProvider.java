@@ -15,113 +15,54 @@ public class S3StorageTestConfigProvider {
 
   public static final String ENDPOINT_OVERRIDE_DEFAULT = "http://localhost:4566";
 
-  public static Map<String, String> config() {
-    return new HashMap<>();
+  public static Builder builder() {
+    return new Builder();
   }
 
-  public static Map<String, String> config(String bucketName) {
-    Map<String, String> configs = config();
-    configs.put(BUCKET_NAME_CONFIG, bucketName);
-    return configs;
-  }
+  public static class Builder {
+    private final Map<String, String> configs = new HashMap<>();
 
-  public static Map<String, String> config(String bucketName, String region) {
-    Map<String, String> configs = config(bucketName);
-    configs.put(REGION_CONFIG, region);
-    return configs;
-  }
+    public Builder bucketName(String bucketName) {
+      configs.put(BUCKET_NAME_CONFIG, bucketName);
+      return this;
+    }
 
-  public static Map<String, String> config(String bucketName, String region, String pathPrefix) {
-    Map<String, String> configs = config(bucketName, region);
-    configs.put(PATH_PREFIX_CONFIG, pathPrefix);
-    return configs;
-  }
+    public Builder region(String region) {
+      configs.put(REGION_CONFIG, region);
+      return this;
+    }
 
-  public static Map<String, String> config(
-      String bucketName, String region, String pathPrefix, String endpointOverride) {
-    Map<String, String> configs = config(bucketName, region, pathPrefix);
-    configs.put(ENDPOINT_OVERRIDE_CONFIG, endpointOverride);
-    return configs;
-  }
+    public Builder pathPrefix(String pathPrefix) {
+      configs.put(PATH_PREFIX_CONFIG, pathPrefix);
+      return this;
+    }
 
-  public static Map<String, String> config(
-      String bucketName, String region, String pathPrefix, String endpointOverride, int retryMax) {
-    Map<String, String> configs = config(bucketName, region, pathPrefix, endpointOverride);
-    configs.put(RETRY_MAX_CONFIG, String.valueOf(retryMax));
-    return configs;
-  }
+    public Builder endpointOverride(String endpointOverride) {
+      configs.put(ENDPOINT_OVERRIDE_CONFIG, endpointOverride);
+      return this;
+    }
 
-  public static Map<String, String> config(
-      String bucketName,
-      String region,
-      String pathPrefix,
-      String endpointOverride,
-      int retryMax,
-      long retryBackoffMs) {
-    Map<String, String> configs =
-        config(bucketName, region, pathPrefix, endpointOverride, retryMax);
-    configs.put(RETRY_BACKOFF_MS_CONFIG, String.valueOf(retryBackoffMs));
-    return configs;
-  }
+    public Builder withDefaultEndpointOverride() {
+      return endpointOverride(ENDPOINT_OVERRIDE_DEFAULT);
+    }
 
-  public static Map<String, String> config(
-      String bucketName,
-      String region,
-      String pathPrefix,
-      String endpointOverride,
-      int retryMax,
-      long retryBackoffMs,
-      long retryMaxBackoffMs) {
-    Map<String, String> configs =
-        config(bucketName, region, pathPrefix, endpointOverride, retryMax, retryBackoffMs);
-    configs.put(RETRY_MAX_BACKOFF_MS_CONFIG, String.valueOf(retryMaxBackoffMs));
-    return configs;
-  }
+    public Builder retryMax(int retryMax) {
+      configs.put(RETRY_MAX_CONFIG, String.valueOf(retryMax));
+      return this;
+    }
 
-  public static Map<String, String> configWithEndpointOverride(String bucketName) {
-    Map<String, String> configs = config(bucketName);
-    configs.put(ENDPOINT_OVERRIDE_CONFIG, ENDPOINT_OVERRIDE_DEFAULT);
-    return configs;
-  }
+    public Builder retryBackoffMs(long retryBackoffMs) {
+      configs.put(RETRY_BACKOFF_MS_CONFIG, String.valueOf(retryBackoffMs));
+      return this;
+    }
 
-  public static Map<String, String> configWithEndpointOverride(String bucketName, String region) {
-    Map<String, String> configs = configWithEndpointOverride(bucketName);
-    configs.put(REGION_CONFIG, region);
-    return configs;
-  }
+    public Builder retryMaxBackoffMs(long retryMaxBackoffMs) {
+      configs.put(RETRY_MAX_BACKOFF_MS_CONFIG, String.valueOf(retryMaxBackoffMs));
+      return this;
+    }
 
-  public static Map<String, String> configWithEndpointOverride(
-      String bucketName, String region, String pathPrefix) {
-    Map<String, String> configs = configWithEndpointOverride(bucketName, region);
-    configs.put(PATH_PREFIX_CONFIG, pathPrefix);
-    return configs;
-  }
-
-  public static Map<String, String> configWithEndpointOverride(
-      String bucketName, String region, String pathPrefix, int retryMax) {
-    Map<String, String> configs = configWithEndpointOverride(bucketName, region, pathPrefix);
-    configs.put(RETRY_MAX_CONFIG, String.valueOf(retryMax));
-    return configs;
-  }
-
-  public static Map<String, String> configWithEndpointOverride(
-      String bucketName, String region, String pathPrefix, int retryMax, long retryBackoffMs) {
-    Map<String, String> configs =
-        configWithEndpointOverride(bucketName, region, pathPrefix, retryMax);
-    configs.put(RETRY_BACKOFF_MS_CONFIG, String.valueOf(retryBackoffMs));
-    return configs;
-  }
-
-  public static Map<String, String> configWithEndpointOverride(
-      String bucketName,
-      String region,
-      String pathPrefix,
-      int retryMax,
-      long retryBackoffMs,
-      long retryMaxBackoffMs) {
-    Map<String, String> configs =
-        configWithEndpointOverride(bucketName, region, pathPrefix, retryMax, retryBackoffMs);
-    configs.put(RETRY_MAX_BACKOFF_MS_CONFIG, String.valueOf(retryMaxBackoffMs));
-    return configs;
+    public Map<String, String> build() {
+      return new HashMap<>(configs);
+    }
   }
 }

@@ -35,7 +35,10 @@ class ClaimCheckSourceTransformTest {
     void shouldConfigureWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type(), 1024);
+          ClaimCheckSourceTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .thresholdBytes(1024)
+              .build();
 
       // When
       transform.configure(configs);
@@ -54,7 +57,10 @@ class ClaimCheckSourceTransformTest {
     @BeforeEach
     void setUp() {
       Map<String, String> configs =
-          ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type(), 1);
+          ClaimCheckSourceTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .thresholdBytes(1)
+              .build();
       transform.configure(configs);
     }
 

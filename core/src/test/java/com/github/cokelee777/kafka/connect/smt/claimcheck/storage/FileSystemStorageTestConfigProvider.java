@@ -10,32 +10,35 @@ import java.util.Map;
 
 public class FileSystemStorageTestConfigProvider {
 
-  public static Map<String, String> config() {
-    return new HashMap<>();
+  public static Builder builder() {
+    return new Builder();
   }
 
-  public static Map<String, String> config(String path) {
-    Map<String, String> configs = config();
-    configs.put(PATH_CONFIG, path);
-    return configs;
-  }
+  public static class Builder {
+    private final Map<String, String> configs = new HashMap<>();
 
-  public static Map<String, String> config(String path, int retryMax) {
-    Map<String, String> configs = config(path);
-    configs.put(RETRY_MAX_CONFIG, String.valueOf(retryMax));
-    return configs;
-  }
+    public Builder path(String path) {
+      configs.put(PATH_CONFIG, path);
+      return this;
+    }
 
-  public static Map<String, String> config(String path, int retryMax, long retryBackoffMs) {
-    Map<String, String> configs = config(path, retryMax);
-    configs.put(RETRY_BACKOFF_MS_CONFIG, String.valueOf(retryBackoffMs));
-    return configs;
-  }
+    public Builder retryMax(int retryMax) {
+      configs.put(RETRY_MAX_CONFIG, String.valueOf(retryMax));
+      return this;
+    }
 
-  public static Map<String, String> config(
-      String path, int retryMax, long retryBackoffMs, long retryMaxBackoffMs) {
-    Map<String, String> configs = config(path, retryMax, retryBackoffMs);
-    configs.put(RETRY_MAX_BACKOFF_MS_CONFIG, String.valueOf(retryMaxBackoffMs));
-    return configs;
+    public Builder retryBackoffMs(long retryBackoffMs) {
+      configs.put(RETRY_BACKOFF_MS_CONFIG, String.valueOf(retryBackoffMs));
+      return this;
+    }
+
+    public Builder retryMaxBackoffMs(long retryMaxBackoffMs) {
+      configs.put(RETRY_MAX_BACKOFF_MS_CONFIG, String.valueOf(retryMaxBackoffMs));
+      return this;
+    }
+
+    public Map<String, String> build() {
+      return new HashMap<>(configs);
+    }
   }
 }

@@ -24,7 +24,10 @@ class ClaimCheckSourceTransformConfigTest {
     void shouldConstructWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type(), 1024);
+          ClaimCheckSourceTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .thresholdBytes(1024)
+              .build();
 
       // When
       ClaimCheckSourceTransformConfig config = new ClaimCheckSourceTransformConfig(configs);
@@ -38,7 +41,9 @@ class ClaimCheckSourceTransformConfigTest {
     void shouldUseDefaultValuesWhenOptionalArgumentsNotProvided() {
       // Given
       Map<String, String> configs =
-          ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type());
+          ClaimCheckSourceTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .build();
 
       // When
       ClaimCheckSourceTransformConfig config = new ClaimCheckSourceTransformConfig(configs);
@@ -51,7 +56,7 @@ class ClaimCheckSourceTransformConfigTest {
     @Test
     void shouldThrowConfigExceptionWhenStorageTypeIsMissing() {
       // Given
-      Map<String, String> configs = ClaimCheckSourceTransformTestConfigProvider.config();
+      Map<String, String> configs = ClaimCheckSourceTransformTestConfigProvider.builder().build();
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
@@ -80,7 +85,10 @@ class ClaimCheckSourceTransformConfigTest {
     void shouldValidateStorageTypeConfigAcceptsValidValues() {
       // Given
       Map<String, String> validConfigs =
-          ClaimCheckSourceTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type(), 1024);
+          ClaimCheckSourceTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .thresholdBytes(1024)
+              .build();
 
       // When & Then
       ClaimCheckSourceTransformConfig.configDef().parse(validConfigs);

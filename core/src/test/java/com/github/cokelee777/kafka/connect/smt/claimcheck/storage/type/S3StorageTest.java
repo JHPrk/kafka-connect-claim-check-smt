@@ -35,8 +35,15 @@ class S3StorageTest {
     void shouldConfigureWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          S3StorageTestConfigProvider.config(
-              "test-bucket", Region.AP_NORTHEAST_1.id(), "test/path", null, 5, 500L, 30000L);
+          S3StorageTestConfigProvider.builder()
+              .bucketName("test-bucket")
+              .region(Region.AP_NORTHEAST_1.id())
+              .pathPrefix("/test/path")
+              .endpointOverride(null)
+              .retryMax(5)
+              .retryBackoffMs(500L)
+              .retryMaxBackoffMs(30000L)
+              .build();
 
       // When
       s3Storage.configure(configs);
@@ -53,7 +60,8 @@ class S3StorageTest {
     @Test
     void shouldUseDefaultValuesWhenOnlyBucketNameProvided() {
       // Given
-      Map<String, String> configs = S3StorageTestConfigProvider.config("test-bucket");
+      Map<String, String> configs =
+          S3StorageTestConfigProvider.builder().bucketName("test-bucket").build();
 
       // When
       s3Storage.configure(configs);
@@ -73,7 +81,7 @@ class S3StorageTest {
     @Test
     void shouldThrowExceptionWhenBucketNameIsMissing() {
       // Given
-      Map<String, String> configs = S3StorageTestConfigProvider.config();
+      Map<String, String> configs = S3StorageTestConfigProvider.builder().build();
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
@@ -88,7 +96,8 @@ class S3StorageTest {
 
     @BeforeEach
     void setUp() {
-      Map<String, String> configs = S3StorageTestConfigProvider.config("test-bucket");
+      Map<String, String> configs =
+          S3StorageTestConfigProvider.builder().bucketName("test-bucket").build();
       s3Storage.configure(configs);
     }
 

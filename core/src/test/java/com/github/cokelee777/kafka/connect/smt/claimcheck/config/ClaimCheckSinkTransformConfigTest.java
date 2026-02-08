@@ -22,7 +22,9 @@ class ClaimCheckSinkTransformConfigTest {
     void shouldConstructWithProvidedStorageType() {
       // Given
       Map<String, String> configs =
-          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.FILESYSTEM.type());
+          ClaimCheckSinkTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.FILESYSTEM.type())
+              .build();
 
       // When
       ClaimCheckSinkTransformConfig config = new ClaimCheckSinkTransformConfig(configs);
@@ -34,7 +36,7 @@ class ClaimCheckSinkTransformConfigTest {
     @Test
     void shouldThrowConfigExceptionWhenStorageTypeIsMissing() {
       // Given
-      Map<String, String> configs = ClaimCheckSinkTransformTestConfigProvider.config();
+      Map<String, String> configs = ClaimCheckSinkTransformTestConfigProvider.builder().build();
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
@@ -63,7 +65,9 @@ class ClaimCheckSinkTransformConfigTest {
     void shouldValidateStorageTypeConfigAcceptsValidValues() {
       // Given
       Map<String, String> validConfigs =
-          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.FILESYSTEM.type());
+          ClaimCheckSinkTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.FILESYSTEM.type())
+              .build();
 
       // When & Then
       ClaimCheckSinkTransformConfig.configDef().parse(validConfigs);

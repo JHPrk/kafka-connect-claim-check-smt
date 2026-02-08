@@ -42,7 +42,12 @@ class FileSystemStorageTest {
     void shouldConfigureWithAllProvidedArguments() throws IOException {
       // Given
       Map<String, String> configs =
-          FileSystemStorageTestConfigProvider.config(tempDir.toString(), 5, 500L, 30000L);
+          FileSystemStorageTestConfigProvider.builder()
+              .path(tempDir.toString())
+              .retryMax(5)
+              .retryBackoffMs(500L)
+              .retryMaxBackoffMs(30000L)
+              .build();
 
       // When
       fileSystemStorage.configure(configs);
@@ -58,7 +63,7 @@ class FileSystemStorageTest {
     @Test
     void shouldUseDefaultValuesWhenNoArgumentsProvided() throws IOException {
       // Given
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config();
+      Map<String, String> configs = FileSystemStorageTestConfigProvider.builder().build();
 
       // When
       fileSystemStorage.configure(configs);
@@ -87,7 +92,8 @@ class FileSystemStorageTest {
       // Given
       Path filePath = tempDir.resolve("test.txt").toAbsolutePath().normalize();
       Files.createFile(filePath);
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config(filePath.toString());
+      Map<String, String> configs =
+          FileSystemStorageTestConfigProvider.builder().path(filePath.toString()).build();
 
       // When & Then
       assertThatExceptionOfType(ConfigException.class)
@@ -103,7 +109,7 @@ class FileSystemStorageTest {
       readOnlyDir.setReadOnly();
 
       Map<String, String> configs =
-          FileSystemStorageTestConfigProvider.config(readOnlyDir.getAbsolutePath());
+          FileSystemStorageTestConfigProvider.builder().path(readOnlyDir.toString()).build();
 
       // When & Then
       try {
@@ -124,7 +130,8 @@ class FileSystemStorageTest {
 
     @BeforeEach
     void setUp() {
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config(tempDir.toString());
+      Map<String, String> configs =
+          FileSystemStorageTestConfigProvider.builder().path(tempDir.toString()).build();
       fileSystemStorage.configure(configs);
     }
 
@@ -151,7 +158,8 @@ class FileSystemStorageTest {
 
     @BeforeEach
     void setUp() {
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config(tempDir.toString());
+      Map<String, String> configs =
+          FileSystemStorageTestConfigProvider.builder().path(tempDir.toString()).build();
       fileSystemStorage.configure(configs);
     }
 

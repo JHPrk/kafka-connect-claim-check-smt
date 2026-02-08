@@ -37,7 +37,9 @@ class ClaimCheckSinkTransformTest {
     void shouldConfigureWithAllProvidedArguments() {
       // Given
       Map<String, String> configs =
-          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type());
+          ClaimCheckSinkTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .build();
 
       // When
       transform.configure(configs);
@@ -55,7 +57,9 @@ class ClaimCheckSinkTransformTest {
     @BeforeEach
     void setUp() {
       Map<String, String> configs =
-          ClaimCheckSinkTransformTestConfigProvider.config(ClaimCheckStorageType.S3.type());
+          ClaimCheckSinkTransformTestConfigProvider.builder()
+              .storageType(ClaimCheckStorageType.S3.type())
+              .build();
       transform.configure(configs);
     }
 

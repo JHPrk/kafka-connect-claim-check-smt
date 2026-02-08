@@ -20,7 +20,8 @@ class FileSystemClientFactoryTest {
     @Test
     void shouldCreateFileSystemClient() {
       // Given
-      Map<String, String> configs = FileSystemStorageTestConfigProvider.config(tempDir.toString());
+      Map<String, String> configs =
+          FileSystemStorageTestConfigProvider.builder().path(tempDir.toString()).build();
       FileSystemStorageConfig config = new FileSystemStorageConfig(configs);
 
       // When

@@ -17,7 +17,8 @@ class S3ClientFactoryTest {
     @Test
     void shouldCreateS3Client() {
       // Given
-      Map<String, String> configs = S3StorageTestConfigProvider.config("test-bucket");
+      Map<String, String> configs =
+          S3StorageTestConfigProvider.builder().bucketName("test-bucket").build();
       S3StorageConfig config = new S3StorageConfig(configs);
 
       // When
@@ -32,7 +33,10 @@ class S3ClientFactoryTest {
     void shouldCreateS3ClientWithEndpointOverride() {
       // Given
       Map<String, String> configs =
-          S3StorageTestConfigProvider.configWithEndpointOverride("test-bucket");
+          S3StorageTestConfigProvider.builder()
+              .bucketName("test-bucket")
+              .withDefaultEndpointOverride()
+              .build();
       S3StorageConfig config = new S3StorageConfig(configs);
 
       // When
