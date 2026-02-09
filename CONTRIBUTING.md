@@ -1,5 +1,4 @@
-Contributing to Kafka Connect Claim Check SMT
-==================================
+# Contributing to Kafka Connect Claim Check SMT
 
 Welcome to the Kafka Connect Claim Check SMT project! We welcome contributions from the community. This guide will walk you through the steps for getting started on our project.
 
@@ -9,7 +8,6 @@ Welcome to the Kafka Connect Claim Check SMT project! We welcome contributions f
 - [Setting up your Developer Environment](#setting-up-your-developer-environment)
 - [Contributing Guidelines](#contributing-guidelines)
 - [Code Reviews](#code-reviews)
-- [Community](#community)
 
 
 ## Forking the Project
@@ -30,13 +28,13 @@ Be sure to replace [URL] with the URL that you copied.
 Now you have the repository on your computer!
 
 ## Issues
-The `kafka-connect-claim-check-smt` project uses GitHub to manage issues. All issues can be found [here](https://github.com/cokelee777/kafka-connect-claim-check-smt/issues).
+The `kafka-connect-claim-check-smt` project uses GitHub to manage issues. All issues can be found on the [GitHub Issues page](https://github.com/cokelee777/kafka-connect-claim-check-smt/issues).
 
 To create a new issue, comment on an existing issue, or assign an issue to yourself, you'll need to first [create a GitHub account](https://github.com/).
 
 
 ### Good First Issues
-Want to contribute to the kafka-connect-claim-check-smt project but aren't quite sure where to start? Check out our issues with the `good-first-issue` label. These are a triaged set of issues that are great for getting started on our project. These can be found [here](https://github.com/cokelee777/kafka-connect-claim-check-smt/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
+Want to contribute to the kafka-connect-claim-check-smt project but aren't quite sure where to start? Check out our issues with the `good-first-issue` label. These are a triaged set of issues that are great for getting started on our project. These can be found on the [good first issues board](https://github.com/cokelee777/kafka-connect-claim-check-smt/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22).
 
 Once you have selected an issue you'd like to work on, make sure it's not already assigned to someone else, and assign it to yourself.
 
@@ -55,19 +53,19 @@ To set up your development environment you need to:
 
 2. Add a remote ref to upstream, for pulling future updates. For example:
 
-    ```
+    ```bash
     git remote add upstream https://github.com/cokelee777/kafka-connect-claim-check-smt
     ```
 
 3. To build `kafka-connect-claim-check-smt` and run the tests, use the following command:
 
-    ```
+    ```bash
     ./gradlew clean :core:build
     ```
 
 4. To skip the tests:
 
-    ```
+    ```bash
     ./gradlew clean :core:build -x test
     ```
 
@@ -88,7 +86,3 @@ When submitting a PR, please keep the following guidelines in mind:
 All submissions, including submissions by project members, need to be reviewed by at least one `kafka-connect-claim-check-smt` committer before being merged.
 
 The [GitHub Pull Request Review Process](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews) is followed for every pull request.
-
-## Community
-
-While not explicitly covered in the original template, it's good practice to add a section for community, if there are any specific communication channels (e.g., Discord, Slack, mailing list) or general guidelines for interaction. If there isn't any, we can omit this section or keep it general.
